@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 from ..const import DTYPE
 
 
@@ -67,47 +69,57 @@ class NumpyTensor:
         return f'NumpyTensor({repr(self.data)})'
 
     def __add__(self, other):
+        other = self._maybe_wrap_constant(other)
         out = self._new(self.data + other.data)
         return out
     
     __radd__ = __add__
 
     def __sub__(self, other):
-        out = self - other
+        other = self._maybe_wrap_constant(other)
+        out = self._new(self.data - other.data)
         return out
     
     def __rsub__(self, other):
-        out = other - self
+        other = self._maybe_wrap_constant(other)
+        out = self._new(other.data - self.data)
         return out
 
     def __mul__(self, other):
+        other = self._maybe_wrap_constant(other)
         out = self._new(self.data * other.data)
         return out
 
     __rmul__ = __mul__
 
     def __truediv__(self, other):
-        out = self / other
+        other = self._maybe_wrap_constant(other)
+        out = self._new(self.data / other.data)
         return out
     
     def __rtruediv__(self, other):
-        out = other / self
+        other = self._maybe_wrap_constant(other)
+        out = self._new(other.data / self.data)
+        return out
+
+    def __pow__(self, value):
+        out = self._new(self.data ** value)
         return out
 
     def __neg__(self):
-        out = -1.0 * self
+        out = self._new(-1.0 * self.data)
         return out
     
     def exp(self):
-        out = self.np.exp(self)
+        out = self._new(self.np.exp(self.data))
         return out
 
     def log(self):
-        out = self.np.log(self)
+        out = self._new(self.np.log(self.data))
         return out
 
     def sum(self, dim=0):
-        out = self.np.sum(self.data, dim)
+        out = self._new(self.np.sum(self.data, dim))
         return out
 
     def numpy(self):
@@ -121,3 +133,8 @@ class NumpyTensor:
 
     def _new(self, data):
         return type(self)(np=self.np, data=data)
+
+    def _maybe_wrap_constant(self, other):
+        if isinstance(other, (int, float)):
+            other = namedtuple('C', ('data',))(other)
+        return other

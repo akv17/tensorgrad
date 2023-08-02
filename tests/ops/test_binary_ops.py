@@ -5,40 +5,38 @@ from parameterized import parameterized
 
 from tensorgrad.tensor import Tensor
 from tensorgrad.const import DTYPE, BACKEND, OP
-from ..util import require_torch, check_tensors
+from ..util import require_torch, check_tensors, generate_cases
 
 torch = require_torch()
 
+OPS_TESTED = (
+    OP.ADD,
+    OP.MUL,
+    OP.SUB,
+    OP.DIV,
+)
+SHAPES_TESTED = (
+    (1,),
+    (10,),
+    (100,),
+    (1000,),
+)
+BACKENDS_TESTED = (
+    BACKEND.NUMPY,
+)
+DTYPES_TESTED = (
+    DTYPE.FLOAT32,
+    DTYPE.FLOAT64,
+)
 
-ADD_CASES = [
-    (OP.ADD, (1,), BACKEND.NUMPY, DTYPE.FLOAT32),
-    (OP.ADD, (10,), BACKEND.NUMPY, DTYPE.FLOAT32),
-    (OP.ADD, (100,), BACKEND.NUMPY, DTYPE.FLOAT32),
-    (OP.ADD, (1000,), BACKEND.NUMPY, DTYPE.FLOAT32),
-    (OP.ADD, (1,), BACKEND.NUMPY, DTYPE.FLOAT64),
-    (OP.ADD, (10,), BACKEND.NUMPY, DTYPE.FLOAT64),
-    (OP.ADD, (100,), BACKEND.NUMPY, DTYPE.FLOAT64),
-    (OP.ADD, (1000,), BACKEND.NUMPY, DTYPE.FLOAT64),
-]
+CASES = generate_cases(OPS_TESTED, SHAPES_TESTED, BACKENDS_TESTED, DTYPES_TESTED)
 
-MUL_CASES = [
-    (OP.MUL, (1,), BACKEND.NUMPY, DTYPE.FLOAT32),
-    (OP.MUL, (10,), BACKEND.NUMPY, DTYPE.FLOAT32),
-    (OP.MUL, (100,), BACKEND.NUMPY, DTYPE.FLOAT32),
-    (OP.MUL, (1000,), BACKEND.NUMPY, DTYPE.FLOAT32),
-    (OP.MUL, (1,), BACKEND.NUMPY, DTYPE.FLOAT64),
-    (OP.MUL, (10,), BACKEND.NUMPY, DTYPE.FLOAT64),
-    (OP.MUL, (100,), BACKEND.NUMPY, DTYPE.FLOAT64),
-    (OP.MUL, (1000,), BACKEND.NUMPY, DTYPE.FLOAT64),
-]
-
-CASES = ADD_CASES + MUL_CASES
 
 class TestBinaryOps(unittest.TestCase):
 
     @parameterized.expand(CASES)
     def test(self, op, shape, backend, dtype):
-        name = f'{op}@{shape}@{backend}@{dtype}'
+        name = f'{op}::{shape}::{backend}::{dtype}'
         method = self._op_to_method(op)
 
         _a = np.random.random(shape).tolist()
@@ -65,4 +63,6 @@ class TestBinaryOps(unittest.TestCase):
         return {
             OP.ADD: '__add__',
             OP.MUL: '__mul__',
+            OP.SUB: '__sub__',
+            OP.DIV: '__truediv__',
         }[op]

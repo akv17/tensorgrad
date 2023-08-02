@@ -51,6 +51,24 @@ class Tensor:
         return out
 
     __radd__ = __add__
+
+    def __sub__(self, other):
+        out_data = self.data - other.data
+        out = self._copy_from_data(out_data)
+        out._children = (self, other)
+        out._op = OP.SUB
+
+        def _backward():
+            if self.requires_grad:
+                self.grad += out.grad
+            if other.requires_grad:
+                other.grad += -out.grad
+        
+        out._backward = _backward
+        return out
+
+    def __rsub__(self, other):
+        return other - self
     
     def __mul__(self, other):
         out_data = self.data * other.data
@@ -68,6 +86,21 @@ class Tensor:
         return out
 
     __rmul__ = __mul__
+
+    def __truediv__(self, other):
+        out_data = self.data / other.data
+        out = self._copy_from_data(out_data)
+        out._children = (self, other)
+        out._op = OP.DIV
+
+        def _backward():
+            if self.requires_grad:
+                self.grad += 1.0 / other.data * out.grad
+            if other.requires_grad:
+                other.grad += (-self.data / (other.data ** 2)) * out.grad
+        
+        out._backward = _backward
+        return out
 
     def sum(self, dim=0):
         out_data = self.data.sum(dim=dim)

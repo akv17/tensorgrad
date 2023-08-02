@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 
 
@@ -14,3 +16,8 @@ def check_tensors(a, b, tol=1e-5):
     b = np.array(b)
     flag = np.allclose(a, b, rtol=tol, atol=tol)
     return flag
+
+
+def generate_cases(*args):
+    cases = list(itertools.product(*args))
+    return cases
