@@ -10,15 +10,15 @@ class Tensor:
     def __init__(
         self,
         data,
-        dtype=None,
+        dtype=DTYPE.FLOAT32,
+        backend=BACKEND.NUMPY,
         name=None,
         requires_grad=True,
-        backend=BACKEND.NUMPY,
     ):
         self.backend = backend
         self._backend = BackendDispatch.get(self.backend)
         
-        self.dtype = dtype or DTYPE.FLOAT32
+        self.dtype = dtype
         self.name = name or f'tensor@{str(uuid4())[:8]}'
         self.requires_grad = requires_grad
         
@@ -78,8 +78,12 @@ class Tensor:
         out = OpDispatch.execute(OP.LOG, self)
         return out
 
-    def sum(self, dim=0):
+    def sum(self, dim=None):
         out = OpDispatch.execute(OP.SUM_REDUCE, self, dim=dim)
+        return out
+    
+    def mean(self, dim=None):
+        out = OpDispatch.execute(OP.MEAN_REDUCE, self, dim=dim)
         return out
 
     def backward(self):

@@ -118,8 +118,12 @@ class NumpyTensor:
         out = self._new(self.np.log(self.data))
         return out
 
-    def sum(self, dim=0):
+    def sum(self, dim=None):
         out = self._new(self.np.sum(self.data, dim))
+        return out
+    
+    def mean(self, dim=None):
+        out = self._new(self.np.mean(self.data, dim))
         return out
 
     def numpy(self):

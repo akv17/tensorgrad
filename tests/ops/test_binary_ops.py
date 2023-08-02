@@ -20,6 +20,9 @@ SHAPES_TESTED = (
     (10,),
     (100,),
     (1000,),
+    (10, 10),
+    (100, 100),
+    (10, 100, 100),
 )
 BACKENDS_TESTED = (
     BACKEND.NUMPY,

@@ -18,6 +18,8 @@ class OP(str, Enum):
     EXP = 'exp'
     LOG = 'log'
     SUM_REDUCE = 'sum_reduce'
+    MEAN_REDUCE = 'mean_reduce'
+    MAX_REDUCE = 'max_reduce'
 
 
 class BACKEND(str, Enum):

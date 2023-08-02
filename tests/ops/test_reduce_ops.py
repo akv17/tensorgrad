@@ -10,17 +10,14 @@ from ..util import require_torch, check_tensors, generate_cases
 torch = require_torch()
 
 OPS_TESTED = (
-    OP.EXP,
-    OP.LOG,
+    OP.SUM_REDUCE,
+    OP.MEAN_REDUCE,
 )
 SHAPES_TESTED = (
     (1,),
     (10,),
     (100,),
     (1000,),
-    (10, 10),
-    (100, 100),
-    (10, 100, 100),
 )
 BACKENDS_TESTED = (
     BACKEND.NUMPY,
@@ -31,7 +28,6 @@ DTYPES_TESTED = (
 )
 
 CASES = generate_cases(OPS_TESTED, SHAPES_TESTED, BACKENDS_TESTED, DTYPES_TESTED)
-POW_CASES = generate_cases([-2.7, -1, 0, 1, 2, 0.5, 3.33], SHAPES_TESTED, BACKENDS_TESTED, DTYPES_TESTED)
 
 
 class TestUnaryOps(unittest.TestCase):
@@ -78,6 +74,6 @@ class TestUnaryOps(unittest.TestCase):
 
     def _op_to_method(self, op):
         return {
-            OP.EXP: 'exp',
-            OP.LOG: 'log',
+            OP.SUM_REDUCE: 'sum',
+            OP.MEAN_REDUCE: 'mean',
         }[op]
