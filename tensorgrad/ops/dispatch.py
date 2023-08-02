@@ -1,6 +1,6 @@
 from .unary import Pow, Exp, Log
 from .binary import Add, Mul, Sub, Div
-from .reduce import SumReduce
+from .reduce import SumReduce, MeanReduce
 
 _OPS = (
     Pow,
@@ -11,6 +11,7 @@ _OPS = (
     Sub,
     Div,
     SumReduce,
+    MeanReduce,
 )
 _DISPATCH = {op.NAME: op for op in _OPS}
 

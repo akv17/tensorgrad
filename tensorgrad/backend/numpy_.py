@@ -64,6 +64,10 @@ class NumpyTensor:
     @property
     def shape(self):
         return self.data.shape
+    
+    @property
+    def size(self):
+        return self.data.size
 
     def __repr__(self):
         return f'NumpyTensor({repr(self.data)})'
