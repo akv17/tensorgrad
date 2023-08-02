@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from .const import DTYPE, OP, BACKEND
-from .backend import get_backend
+from .backend import BackendDispatch
 from .ops import OpDispatch
 
 
@@ -16,7 +16,7 @@ class Tensor:
         backend=BACKEND.NUMPY,
     ):
         self.backend = backend
-        self._backend = get_backend(self.backend)
+        self._backend = BackendDispatch.get(self.backend)
         
         self.dtype = dtype or DTYPE.FLOAT32
         self.name = name or f'tensor@{str(uuid4())[:8]}'
