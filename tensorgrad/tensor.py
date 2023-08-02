@@ -102,6 +102,50 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def __rtruediv__(self, other):
+        return other / self
+
+    def __pow__(self, value):
+        assert isinstance(value, (int, float))
+        out_data = self.data ** value
+        out = self._copy_from_data(out_data)
+        out._children = (self,)
+        out._op = OP.POW
+
+        def _backward():
+            if self.requires_grad:
+                n = value
+                self.grad += (n * self.data ** (n-1)) * out.grad
+        
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        out_data = self.data.exp()
+        out = self._copy_from_data(out_data)
+        out._children = (self,)
+        out._op = OP.EXP
+
+        def _backward():
+            if self.requires_grad:
+                self.grad += out_data * out.grad
+        
+        out._backward = _backward
+        return out
+
+    def log(self):
+        out_data = self.data.log()
+        out = self._copy_from_data(out_data)
+        out._children = (self,)
+        out._op = OP.LOG
+
+        def _backward():
+            if self.requires_grad:
+                self.grad += 1 / self.data * out.grad
+        
+        out._backward = _backward
+        return out
+
     def sum(self, dim=0):
         out_data = self.data.sum(dim=dim)
         out = self._copy_from_data(out_data)

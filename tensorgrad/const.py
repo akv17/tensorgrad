@@ -14,6 +14,7 @@ class OP(str, Enum):
     SUB = 'sub'
     MUL = 'mul'
     DIV = 'div'
+    POW = 'pow'
     EXP = 'exp'
     LOG = 'log'
     SUM_REDUCE = 'sum_reduce'
