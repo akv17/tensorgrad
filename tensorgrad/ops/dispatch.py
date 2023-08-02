@@ -1,7 +1,11 @@
+from .unary import Pow, Exp, Log
 from .binary import Add, Mul, Sub, Div
 from .reduce import SumReduce
 
 _OPS = (
+    Pow,
+    Exp,
+    Log,
     Add,
     Mul,
     Sub,

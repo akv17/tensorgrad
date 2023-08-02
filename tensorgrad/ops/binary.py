@@ -1,6 +1,7 @@
 from .interface import Op
 from ..const import OP
 
+
 class Add(Op):
     NAME = OP.ADD
 
