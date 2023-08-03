@@ -91,8 +91,8 @@ class TestShapeOps(unittest.TestCase):
         generate_cases(
             [0, 1, 2],
             [
-                (10, 10),
-                (100, 100),
+                (5, 10),
+                (50, 100),
             ],
             [OP.UNSQUEEZE],
             BACKENDS_TESTED,
@@ -102,8 +102,8 @@ class TestShapeOps(unittest.TestCase):
         generate_cases(
             [0, 1, 2, 3],
             [
-                (10, 10, 10),
-                (10, 100, 100),
+                (2, 5, 10),
+                (5, 50, 100),
             ],
             [OP.UNSQUEEZE],
             BACKENDS_TESTED,
