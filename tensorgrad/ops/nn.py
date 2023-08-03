@@ -38,3 +38,31 @@ class Sigmoid(Op):
     def backward(self):
         if self.x.requires_grad:
             self.x.grad += self.out.data * (1.0 - self.out.data) * self.out.grad
+
+
+class Softmax(Op):
+    NAME = OP.SOFTMAX
+
+    def __init__(self, x, *, dim):
+        self.out = None
+        self.x = x
+        self.dim = dim
+
+    def forward(self):
+        # exp = self.x.data.exp()
+        # norm = exp.sum(self.dim).unsqueeze(self.dim)
+        # out = exp / norm
+        # self.out = self.x.zeros_like()
+        # self.out.data = out
+        # return self.out
+        x = self.x.detach()
+        exp = x.exp(self.dim)
+        norm = exp.sum(self.dim).unsqueeze(self.dim)
+        self.out = exp / norm
+        return self.out
+
+    def backward(self):
+        self.out.backward()
+        
+        # if self.x.requires_grad:
+        #     pass

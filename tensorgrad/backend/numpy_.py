@@ -166,6 +166,14 @@ class NumpyTensor:
         out = self._new(out)
         return out
 
+    def squeeze(self, dim):
+        out = self._new(self.np.squeeze(self.data, dim))
+        return out
+
+    def unsqueeze(self, dim):
+        out = self._new(self.np.expand_dims(self.data, dim))
+        return out
+
     def numpy(self):
         return self.data.copy()
 

@@ -93,6 +93,18 @@ class Tensor:
     def sigmoid(self):
         out = OpDispatch.execute(OP.SIGMOID, self)
         return out
+    
+    def softmax(self, dim):
+        out = OpDispatch.execute(OP.SOFTMAX, self, dim=dim)
+        return out
+
+    def squeeze(self, dim):
+        out = OpDispatch.execute(OP.SQUEEZE, self, dim=dim)
+        return out
+
+    def unsqueeze(self, dim):
+        out = OpDispatch.execute(OP.UNSQUEEZE, self, dim=dim)
+        return out
 
     def backward(self):
         self.grad = self._backend.ones(self.shape, dtype=self.dtype)
@@ -110,6 +122,11 @@ class Tensor:
         _traverse(self)
         for node in reversed(nodes_sorted):
             node._backward()
+
+    def detach(self):
+        out = self.copy()
+        out._children = ()
+        out._op = None
 
     def copy(self):
         ob = self._copy_from_data(self.data)

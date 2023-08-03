@@ -11,10 +11,18 @@ def require_torch():
         raise ImportError('PyTorch required for testing.')
 
 
-def check_tensors(a, b, tol=1e-5):
+def check_tensors(a, b, tol=1e-5, show_diff=False):
     a = np.array(a)
     b = np.array(b)
+    # assert a.shape == b.shape, 'shape mismatch'
     flag = np.allclose(a, b, rtol=tol, atol=tol)
+    if show_diff and not flag:
+        a = a.ravel()
+        b = b.ravel()
+        for ai, bi in zip(a, b):
+            if not np.allclose([ai], [bi], rtol=tol, atol=tol):
+                msg = f'a={ai} b={bi} :: d={abs(ai - bi)}'
+                print(msg)
     return flag
 
 

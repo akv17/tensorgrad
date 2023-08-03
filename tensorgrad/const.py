@@ -24,6 +24,10 @@ class OP(str, Enum):
     
     RELU = 'relu'
     SIGMOID = 'sigmoid'
+    SOFTMAX = 'softmax'
+
+    SQUEEZE = 'squeeze'
+    UNSQUEEZE = 'unsqueeze'
 
 
 class BACKEND(str, Enum):

@@ -1,7 +1,8 @@
 from .unary import Pow, Exp, Log
 from .binary import Add, Mul, Sub, Div
 from .reduce import SumReduce, MeanReduce
-from .nn import Relu, Sigmoid
+from .nn import Relu, Sigmoid, Softmax
+from .shape import Unsqueeze, Squeeze
 
 _OPS = (
     Pow,
@@ -16,8 +17,12 @@ _OPS = (
     SumReduce,
     MeanReduce,
 
+    Squeeze,
+    Unsqueeze,
+
     Relu,
-    Sigmoid
+    Sigmoid,
+    Softmax,
 )
 _DISPATCH = {op.NAME: op for op in _OPS}
 
