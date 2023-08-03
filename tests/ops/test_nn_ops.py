@@ -49,12 +49,12 @@ class TestBinaryOps(unittest.TestCase):
         _x = _x.tolist()
     
         x = Tensor(_x, name='x', dtype=dtype, backend=backend, requires_grad=True)
-        y = getattr(x, method)().sum()
+        y = getattr(x, method)().exp().sum()
         y.backward()
 
         tdtype = getattr(torch, dtype.value)
         tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
-        ty = getattr(tx, method)().sum()
+        ty = getattr(tx, method)().exp().sum()
         ty.backward()
 
         self._check_tensors(ty, y, msg=f'{name}@forward')
