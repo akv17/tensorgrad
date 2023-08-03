@@ -11,6 +11,7 @@ torch = require_torch()
 
 OPS_TESTED = (
     OP.RELU,
+    OP.SIGMOID,
 )
 SHAPES_TESTED = (
     (1,),
@@ -26,7 +27,7 @@ BACKENDS_TESTED = (
 )
 DTYPES_TESTED = (
     DTYPE.FLOAT32,
-    # DTYPE.FLOAT64,
+    DTYPE.FLOAT64,
 )
 
 CASES = generate_cases(OPS_TESTED, SHAPES_TESTED, BACKENDS_TESTED, DTYPES_TESTED)
@@ -65,4 +66,5 @@ class TestBinaryOps(unittest.TestCase):
     def _op_to_method(self, op):
         return {
             OP.RELU: 'relu',
+            OP.SIGMOID: 'sigmoid',
         }[op]

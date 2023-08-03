@@ -89,6 +89,10 @@ class Tensor:
     def relu(self):
         out = OpDispatch.execute(OP.RELU, self)
         return out
+    
+    def sigmoid(self):
+        out = OpDispatch.execute(OP.SIGMOID, self)
+        return out
 
     def backward(self):
         self.grad = self._backend.ones(self.shape, dtype=self.dtype)
