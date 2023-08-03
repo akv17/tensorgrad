@@ -183,6 +183,9 @@ class NumpyTensor:
     def copy(self):
         return self._new(self.data)
 
+    def zeros_like(self):
+        return self._new(self.np.zeros_like(self.data))
+
     def _new(self, data):
         return type(self)(np=self.np, data=data)
 
