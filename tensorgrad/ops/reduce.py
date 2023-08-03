@@ -12,11 +12,13 @@ class SumReduce:
     def forward(self):
         self.out = self.x.zeros_like()
         self.out.data = self.x.data.sum(dim=self.dim)
+        self.out.grad = self.out.data.zeros_like()
         return self.out
 
     def backward(self):
         if self.x.requires_grad:
-            self.x.grad += self.out.grad
+            out_grad = self.out.grad.unsqueeze(self.dim) if self.dim is not None else self.out.grad
+            self.x.grad += out_grad
 
 
 class MeanReduce:
@@ -30,9 +32,11 @@ class MeanReduce:
     def forward(self):
         self.out = self.x.zeros_like()
         self.out.data = self.x.data.mean(dim=self.dim)
+        self.out.grad = self.out.data.zeros_like()
         return self.out
 
     def backward(self):
         if self.x.requires_grad:
             size = self.x.data.size if self.dim is None else self.x.data.shape[self.dim]
-            self.x.grad += 1.0 / size * self.out.grad
+            out_grad = self.out.grad.unsqueeze(self.dim) if self.dim is not None else self.out.grad
+            self.x.grad += 1.0 / size * out_grad
