@@ -5,13 +5,15 @@ from ..const import OP
 class Pow(Op):
     NAME = OP.POW
     
-    def __init__(self, out, x, *, value):
-        self.out = out
+    def __init__(self, x, *, value):
+        self.out = None
         self.x = x
         self.value = value
     
     def forward(self):
+        self.out = self.x.zeros_like()
         self.out.data = self.x.data ** self.value
+        return self.out
     
     def backward(self):
         if self.x.requires_grad:
@@ -22,12 +24,14 @@ class Pow(Op):
 class Exp(Op):
     NAME = OP.EXP
     
-    def __init__(self, out, x):
-        self.out = out
+    def __init__(self, x):
+        self.out = None
         self.x = x
     
     def forward(self):
+        self.out = self.x.zeros_like()
         self.out.data = self.x.data.exp()
+        return self.out
     
     def backward(self):
         if self.x.requires_grad:
@@ -37,12 +41,14 @@ class Exp(Op):
 class Log(Op):
     NAME = OP.LOG
     
-    def __init__(self, out, x):
-        self.out = out
+    def __init__(self, x):
+        self.out = None
         self.x = x
     
     def forward(self):
+        self.out = self.x.zeros_like()
         self.out.data = self.x.data.log()
+        return self.out
     
     def backward(self):
         if self.x.requires_grad:

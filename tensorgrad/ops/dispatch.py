@@ -26,9 +26,8 @@ class OpDispatch:
 
     @classmethod
     def execute(cls, op, *args, **kwargs):
-        out = args[0].zeros_like()
-        op = _DISPATCH[op](out, *args, **kwargs)
-        op.forward()
+        op = _DISPATCH[op](*args, **kwargs)
+        out = op.forward()
         out._children = args
         out._op = op
         return out

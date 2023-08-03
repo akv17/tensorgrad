@@ -5,13 +5,15 @@ from ..const import OP
 class Add(Op):
     NAME = OP.ADD
 
-    def __init__(self, out, a, b):
-        self.out = out
+    def __init__(self, a, b):
+        self.out = None
         self.a = a
         self.b = b
 
     def forward(self):
+        self.out = self.a.zeros_like()
         self.out.data = self.a.data + self.b.data
+        return self.out
 
     def backward(self):
         if self.a.requires_grad:
@@ -23,13 +25,15 @@ class Add(Op):
 class Sub(Op):
     NAME = OP.SUB
 
-    def __init__(self, out, a, b):
-        self.out = out
+    def __init__(self, a, b):
+        self.out = None
         self.a = a
         self.b = b
 
     def forward(self):
+        self.out = self.a.zeros_like()
         self.out.data = self.a.data - self.b.data
+        return self.out
 
     def backward(self):
         if self.a.requires_grad:
@@ -41,13 +45,15 @@ class Sub(Op):
 class Mul(Op):
     NAME = OP.MUL
 
-    def __init__(self, out, a, b):
-        self.out = out
+    def __init__(self, a, b):
+        self.out = None
         self.a = a
         self.b = b
 
     def forward(self):
+        self.out = self.a.zeros_like()
         self.out.data = self.a.data * self.b.data
+        return self.out
 
     def backward(self):
         if self.a.requires_grad:
@@ -59,13 +65,15 @@ class Mul(Op):
 class Div(Op):
     NAME = OP.DIV
 
-    def __init__(self, out, a, b):
-        self.out = out
+    def __init__(self, a, b):
+        self.out = None
         self.a = a
         self.b = b
 
     def forward(self):
+        self.out = self.a.zeros_like()
         self.out.data = self.a.data / self.b.data
+        return self.out
 
     def backward(self):
         if self.a.requires_grad:

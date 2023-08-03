@@ -5,15 +5,16 @@ from ..const import OP
 class Relu(Op):
     NAME = OP.RELU
 
-    def __init__(self, out, x):
-        self.out = out
+    def __init__(self, x):
+        self.out = None
         self.x = x
         self.mask = None
 
     def forward(self):
+        self.out = self.x.copy()
         self.mask = self.x.data <= 0.0
-        self.out.data = self.x.data.copy()
         self.out.data = self.out.data.fill(self.mask, 0.0)
+        return self.out
 
     def backward(self):
         if self.x.requires_grad:
@@ -25,14 +26,14 @@ class Relu(Op):
 class Sigmoid(Op):
     NAME = OP.SIGMOID
 
-    def __init__(self, out, x):
-        self.out = out
+    def __init__(self, x):
+        self.out = None
         self.x = x
-        self.mask = None
 
     def forward(self):
-        # 1 / (1 + math.exp(-self.data))
+        self.out = self.x.zeros_like()
         self.out.data = 1.0 / (1.0 + (-self.x.data).exp())
+        return self.out
 
     def backward(self):
         if self.x.requires_grad:
