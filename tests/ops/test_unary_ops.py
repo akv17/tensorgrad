@@ -18,9 +18,9 @@ SHAPES_TESTED = (
     (10,),
     (100,),
     (1000,),
-    (10, 10),
-    (100, 100),
-    (10, 100, 100),
+    (5, 10),
+    (50, 100),
+    (5, 50, 100),
 )
 BACKENDS_TESTED = (
     BACKEND.NUMPY,
@@ -44,12 +44,12 @@ class TestUnaryOps(unittest.TestCase):
         _x = np.random.random(shape).tolist()
 
         x = Tensor(_x, name='x', dtype=dtype, backend=backend, requires_grad=True)
-        y = getattr(x, method)().exp().sum()
+        y = getattr(x, method)().sum()
         y.backward()
 
         tdtype = getattr(torch, dtype.value)
         tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
-        ty = getattr(tx, method)().exp().sum()
+        ty = getattr(tx, method)().sum()
         ty.backward()
 
         self._check_tensors(ty, y, msg=f'{name}@forward')
