@@ -14,12 +14,16 @@ class OP(str, Enum):
     SUB = 'sub'
     MUL = 'mul'
     DIV = 'div'
+    
     POW = 'pow'
     EXP = 'exp'
     LOG = 'log'
+    
     SUM_REDUCE = 'sum_reduce'
     MEAN_REDUCE = 'mean_reduce'
-    MAX_REDUCE = 'max_reduce'
+    
+    RELU = 'relu'
+    SIGMOID = 'sigmoid'
 
 
 class BACKEND(str, Enum):

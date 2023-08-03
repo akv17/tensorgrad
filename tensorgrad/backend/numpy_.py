@@ -114,6 +114,30 @@ class NumpyTensor:
         out = self._new(-1.0 * self.data)
         return out
     
+    def __gt__(self, value):
+        out = self._new(self.data > value)
+        return out
+    
+    def __ge__(self, value):
+        out = self._new(self.data >= value)
+        return out
+    
+    def __lt__(self, value):
+        out = self._new(self.data < value)
+        return out
+    
+    def __le__(self, value):
+        out = self._new(self.data <= value)
+        return out
+    
+    def __eq__(self, value):
+        out = self._new(self.data == value)
+        return out
+    
+    def __ne__(self, value):
+        out = self._new(self.data != value)
+        return out
+    
     def exp(self):
         out = self._new(self.np.exp(self.data))
         return out
@@ -128,6 +152,18 @@ class NumpyTensor:
     
     def mean(self, dim=None):
         out = self._new(self.np.mean(self.data, dim))
+        return out
+
+    def fill(self, mask, value):
+        out = self.data.copy()
+        out[mask.data] = value
+        out = self._new(out)
+        return out
+    
+    def ifill(self, mask, value):
+        out = self.data.copy()
+        out[~mask.data] = value
+        out = self._new(out)
         return out
 
     def numpy(self):

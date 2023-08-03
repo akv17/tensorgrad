@@ -85,6 +85,10 @@ class Tensor:
     def mean(self, dim=None):
         out = OpDispatch.execute(OP.MEAN_REDUCE, self, dim=dim)
         return out
+    
+    def relu(self):
+        out = OpDispatch.execute(OP.RELU, self)
+        return out
 
     def backward(self):
         self.grad = self._backend.ones(self.shape, dtype=self.dtype)
@@ -103,16 +107,24 @@ class Tensor:
         for node in reversed(nodes_sorted):
             node._backward()
 
+    def copy(self):
+        ob = self._copy_from_data(self.data)
+        return ob
+
+    def zeros_like(self):
+        data = self._backend.zeros(self.data.shape, dtype=self.dtype)
+        return self._copy_from_data(data)
+    
+    def ones_like(self):
+        data = self._backend.ones(self.data.shape, dtype=self.dtype)
+        return self._copy_from_data(data)
+    
     def tolist(self):
         return self.data.tolist()
 
     def render(self):
         from .render import render_graph
         render_graph(self)
-    
-    def zeros_like(self):
-        data = self._backend.zeros(self.data.shape, dtype=self.dtype)
-        return self._copy_from_data(data)
 
     def _copy_from_data(self, data, name=None):
         ob = type(self)(
