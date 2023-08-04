@@ -31,6 +31,10 @@ class Tensor:
     @property
     def shape(self):
         return self.data.shape
+    
+    @property
+    def ndim(self):
+        return len(self.shape)
 
     @property
     def _backward(self):
@@ -106,8 +110,12 @@ class Tensor:
         out = OpDispatch.execute(OP.UNSQUEEZE, self, dim=dim)
         return out
 
-    def backward(self):
-        self.grad = self._backend.ones(self.shape, dtype=self.dtype)
+    def backward(self, upstream=None):
+        if upstream is not None:
+            upstream = self._backend.tensor(upstream, dtype=self.dtype)
+        else:
+            upstream = self._backend.ones(self.shape, dtype=self.dtype)
+        self.grad = upstream
         visited = set()
         nodes_sorted = []
 
@@ -123,17 +131,16 @@ class Tensor:
         for node in reversed(nodes_sorted):
             node._backward()
 
-    def detach(self):
-        out = self.copy()
-        out._children = ()
-        out._op = None
-
     def copy(self):
         ob = self._copy_from_data(self.data)
         return ob
 
     def zeros_like(self):
         data = self._backend.zeros(self.data.shape, dtype=self.dtype)
+        return self._copy_from_data(data)
+    
+    def zeros(self, shape):
+        data = self._backend.zeros(shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def ones_like(self):
