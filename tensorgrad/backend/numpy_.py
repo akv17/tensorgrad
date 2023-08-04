@@ -154,6 +154,10 @@ class NumpyTensor:
         out = self._new(self.np.mean(self.data, dim))
         return out
 
+    def matmul(self, other):
+        out = self._new(self.data.dot(other.data))
+        return out
+
     def fill(self, mask, value):
         out = self.data.copy()
         out[mask.data] = value
@@ -163,6 +167,12 @@ class NumpyTensor:
     def ifill(self, mask, value):
         out = self.data.copy()
         out[~mask.data] = value
+        out = self._new(out)
+        return out
+
+    def fill_diagonal(self, other):
+        out = self.data.copy()
+        self.np.fill_diagonal(out, other.data)
         out = self._new(out)
         return out
 
