@@ -33,7 +33,7 @@ DTYPES_TESTED = (
 CASES = generate_cases(OPS_TESTED, SHAPES_TESTED, BACKENDS_TESTED, DTYPES_TESTED)
 
 
-class TestBinaryOps(unittest.TestCase):
+class TestNNOps(unittest.TestCase):
 
     @parameterized.expand(
         generate_cases(
@@ -137,6 +137,45 @@ class TestBinaryOps(unittest.TestCase):
 
         self._check_tensors(ty, y, msg=f'{name}@forward')
         self._check_tensors(tx.grad, x.grad, msg=f'{name}@x_grad')
+
+    @parameterized.expand(
+        generate_cases(
+            [
+                [(2, 4), (4, 2)],
+                [(2, 2), (2, 2)],
+                [(4, 1), (1, 4)],
+                [(1, 4), (4, 1)],
+                [(128, 256), (256, 128)],
+                [(2, 3, 4), (2, 4, 3)],
+                [(20, 30, 40), (20, 40, 30)],
+                [(2, 3, 4, 5), (2, 3, 5, 4)],
+                [(20, 30, 40, 50), (20, 30, 50, 40)],
+            ],
+            BACKENDS_TESTED,
+            DTYPES_TESTED
+        )
+    )
+    def test_matmul(self, shapes, backend, dtype):
+        name = f'matmul::{shapes}::{backend}::{dtype}'
+        
+        a_shape, b_shape = shapes
+        _a = np.random.uniform(-1.0, 1.0, size=a_shape).tolist()
+        _b = np.random.uniform(-1.0, 1.0, size=b_shape).tolist()
+
+        a = Tensor(_a, name='a', dtype=dtype, backend=backend, requires_grad=True)
+        b = Tensor(_b, name='b', dtype=dtype, backend=backend, requires_grad=True)
+        c = a.matmul(b).sum()
+        c.backward()
+
+        tdtype = getattr(torch, dtype.value)
+        ta = torch.tensor(_a, dtype=tdtype, requires_grad=True)
+        tb = torch.tensor(_b, dtype=tdtype, requires_grad=True)
+        tc = ta.matmul(tb).sum()
+        tc.backward()
+
+        self._check_tensors(tc, c, msg=f'{name}@forward')
+        self._check_tensors(ta.grad, a.grad, msg=f'{name}@a_grad')
+        self._check_tensors(tb.grad, b.grad, msg=f'{name}@b_grad')
 
     def _check_tensors(self, a, b, tol=1e-5, msg=''):
         self.assertTrue(check_tensors(a.tolist(), b.tolist(), tol=tol, show_diff=False), msg=msg)

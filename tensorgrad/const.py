@@ -21,13 +21,14 @@ class OP(str, Enum):
     
     SUM_REDUCE = 'sum_reduce'
     MEAN_REDUCE = 'mean_reduce'
-    
-    RELU = 'relu'
-    SIGMOID = 'sigmoid'
-    SOFTMAX = 'softmax'
 
     SQUEEZE = 'squeeze'
     UNSQUEEZE = 'unsqueeze'
+
+    RELU = 'relu'
+    SIGMOID = 'sigmoid'
+    SOFTMAX = 'softmax'
+    MATMUL = 'matmul'
 
 
 class BACKEND(str, Enum):

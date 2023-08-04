@@ -6,7 +6,7 @@ from .ops import OpDispatch
 
 
 class Tensor:
-    
+
     def __init__(
         self,
         data,
@@ -109,6 +109,10 @@ class Tensor:
     def unsqueeze(self, dim):
         out = OpDispatch.execute(OP.UNSQUEEZE, self, dim=dim)
         return out
+    
+    def matmul(self, other):
+        out = OpDispatch.execute(OP.MATMUL, self, other)
+        return out
 
     def backward(self, upstream=None):
         if upstream is not None:
@@ -133,6 +137,10 @@ class Tensor:
 
     def copy(self):
         ob = self._copy_from_data(self.data)
+        return ob
+
+    def from_data(self, data):
+        ob = self._copy_from_data(data)
         return ob
 
     def zeros_like(self):

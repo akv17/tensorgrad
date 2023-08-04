@@ -131,3 +131,46 @@ class Softmax(Op):
         d_grad = d_grad.permute(transpose_dims)
 
         self.x.grad += d_grad
+
+
+
+class Matmul:
+    NAME = OP.MATMUL
+
+    def __init__(self, a, b):
+        self.out = None
+        self.a = a
+        self.b = b
+    
+    def forward(self):
+        c = self.a.data.matmul(self.b.data)
+        self.out = self.a.from_data(c)
+        return self.out
+
+    def backward(self):
+        # notes on handling multidim tensors:
+        # - no matter how many dims the tensors have, this op may always be seen as collection of 2d matmuls.
+        # - to leverage this we reshape all tensors to 3d shape [-1, prelast_dim, last_dim]
+        # - then computing local grads is simple:
+        #       downstream_grad_a = upstream_grad * b.T
+        #       downstream_grad_b = a.T * upstream_grad
+        # - finally we reshape all downstream grads back to match shape of the inputs.
+
+        if self.a.requires_grad:
+            u_grad = self.out.grad
+            u_grad = u_grad.reshape(-1, u_grad.shape[-2], u_grad.shape[-1])
+            b = self.b.data
+            b = b.reshape(-1, b.shape[-2], b.shape[-1])
+            b = b.permute([0, 2, 1])
+            d_grad = u_grad.matmul(b)
+            d_grad = d_grad.reshape(self.a.shape)
+            self.a.grad += d_grad
+        if self.b.requires_grad:
+            u_grad = self.out.grad
+            u_grad = u_grad.reshape(-1, u_grad.shape[-2], u_grad.shape[-1])
+            a = self.a.data
+            a = a.reshape(-1, a.shape[-2], a.shape[-1])
+            a = a.permute([0, 2, 1])
+            d_grad = a.matmul(u_grad)
+            d_grad = d_grad.reshape(self.b.shape)
+            self.b.grad += d_grad
