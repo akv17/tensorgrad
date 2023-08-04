@@ -49,20 +49,32 @@ class Softmax(Op):
         self.dim = dim
 
     def forward(self):
-        # exp = self.x.data.exp()
-        # norm = exp.sum(self.dim).unsqueeze(self.dim)
-        # out = exp / norm
-        # self.out = self.x.zeros_like()
-        # self.out.data = out
-        # return self.out
-        x = self.x.detach()
-        exp = x.exp(self.dim)
-        norm = exp.sum(self.dim).unsqueeze(self.dim)
-        self.out = exp / norm
+        exp = self.x.data.exp()
+        norm = exp.sum()
+        self.exp = exp
+        self.norm = norm
+        out_data = exp / norm
+        self.out = self.x.zeros(out_data.shape)
+        self.out.data = out_data
+        self.out.grad = out_data.zeros_like()
         return self.out
 
     def backward(self):
-        self.out.backward()
-        
-        # if self.x.requires_grad:
-        #     pass
+        if self.x.requires_grad:
+            softmax = self.out.data
+            # grad when i != j
+            jacob = -(softmax.unsqueeze(1)).matmul(softmax.unsqueeze(0))
+            # grad when i == j
+            d_ii = softmax * (1.0 - softmax)
+            jacob = jacob.fill_diagonal(d_ii)
+            grad = jacob.matmul(self.out.grad)
+            self.x.grad += grad
+            
+            # import numpy as np
+            # sm = self.out.data.data
+            # jb = -sm.reshape(-1, 1).dot(sm.reshape(1, -1))
+            # a = sm * (1.0 - sm)
+            # np.fill_diagonal(jb, a)
+            # g = jb.dot(self.out.grad.data)
+            # g = type(self.out.data)(np, g)
+            # self.x.grad += g
