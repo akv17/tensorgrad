@@ -155,7 +155,7 @@ class NumpyTensor:
         return out
 
     def matmul(self, other):
-        out = self._new(self.data.dot(other.data))
+        out = self._new(self.np.matmul(self.data, other.data))
         return out
 
     def fill(self, mask, value):
@@ -174,6 +174,22 @@ class NumpyTensor:
         out = self.data.copy()
         self.np.fill_diagonal(out, other.data)
         out = self._new(out)
+        return out
+
+    def fill_diagonal2d(self, other):
+        out = self.data.copy()
+        dim_last = out.shape[-1]
+        dim_prelast = out.shape[-2]
+        out[..., range(dim_prelast), range(dim_last)] = other.data
+        out = self._new(out)
+        return out
+
+    def reshape(self, *shape):
+        out = self._new(self.data.reshape(*shape))
+        return out
+
+    def permute(self, shape):
+        out = self._new(self.np.transpose(self.data, shape))
         return out
 
     def squeeze(self, dim):

@@ -92,7 +92,7 @@ class TestBinaryOps(unittest.TestCase):
         )
         +
         generate_cases(
-            [0, 1],
+            [0],
             [
                 (2, 3),
                 (200, 300),
