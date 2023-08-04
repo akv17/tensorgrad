@@ -16,9 +16,9 @@ def render_graph(node):
         visited.add(id(node))
         op = node._op
         op_key = f'_op_{id(node)}'
-        dot.node(str(id(node)), f'{node.name}\n\nshape={list(node.shape)}\n\ndata={node.data.data}\n\ngrad={node.grad.data}', shape='box')
+        dot.node(str(id(node)), f'{str(node.name)}\n\nshape={list(node.shape)}\n\ndata={node.data.data}\n\ngrad={node.grad.data}', shape='box')
         if op is not None:
-            dot.node(op_key, op)
+            dot.node(op_key, str(op.NAME.value))
         for ch in node._children:
             # dot.node(str(id(ch)), f'{ch.name}\nshape={list(ch.shape)}\ndata={node.data.data}\n\ngrad={node.grad.data}', shape='box')
             nodes.append(ch)
