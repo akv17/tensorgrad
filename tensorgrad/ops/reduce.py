@@ -17,7 +17,13 @@ class SumReduce:
 
     def backward(self):
         if self.x.requires_grad:
-            out_grad = self.out.grad.unsqueeze(self.dim) if self.dim is not None else self.out.grad
+            out_grad = self.out.grad
+            if self.dim is None:
+                out_grad = self.out.grad
+            elif self.dim == 0 and self.x.ndim < 2:
+                out_grad = self.out.grad
+            else:
+                out_grad = self.out.grad.unsqueeze(self.dim)
             self.x.grad += out_grad
 
 
@@ -38,5 +44,10 @@ class MeanReduce:
     def backward(self):
         if self.x.requires_grad:
             size = self.x.data.size if self.dim is None else self.x.data.shape[self.dim]
-            out_grad = self.out.grad.unsqueeze(self.dim) if self.dim is not None else self.out.grad
+            if self.dim is None:
+                out_grad = self.out.grad
+            elif self.dim == 0 and self.x.ndim < 2:
+                out_grad = self.out.grad
+            else:
+                out_grad = self.out.grad.unsqueeze(self.dim)
             self.x.grad += 1.0 / size * out_grad

@@ -53,7 +53,6 @@ CASES_3D = generate_cases(
     DTYPES_TESTED
 )
 CASES = CASES_1D + CASES_2D + CASES_3D
-# CASES = CASES_2D
 
 
 class TestReduceOps(unittest.TestCase):
@@ -66,12 +65,12 @@ class TestReduceOps(unittest.TestCase):
         _x = np.random.random(shape).tolist()
 
         x = Tensor(_x, name='x', dtype=dtype, backend=backend, requires_grad=True)
-        y = getattr(x, method)(dim=dim).sum()
+        y = getattr(x, method)(dim=dim).log().sum()
         y.backward()
 
         tdtype = getattr(torch, dtype.value)
         tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
-        ty = getattr(tx, method)(dim=dim).sum()
+        ty = getattr(tx, method)(dim=dim).log().sum()
         ty.backward()
         
         self._check_tensors(ty, y, msg=f'{name}@forward')
