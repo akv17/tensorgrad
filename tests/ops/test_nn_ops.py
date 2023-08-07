@@ -80,7 +80,7 @@ class TestNNOps(unittest.TestCase):
 
     @parameterized.expand(
         generate_cases(
-            [0],
+            [0, -1],
             [
                 (1,),
                 (10,),
@@ -92,7 +92,7 @@ class TestNNOps(unittest.TestCase):
         )
         +
         generate_cases(
-            [0],
+            [0, -1],
             [
                 (2, 3),
                 (200, 300),
@@ -102,7 +102,7 @@ class TestNNOps(unittest.TestCase):
         )
         +
         generate_cases(
-            [0, 1, 2],
+            [0, 1, 2, -1],
             [
                 (2, 3, 4),
                 (20, 30, 40),
@@ -112,7 +112,7 @@ class TestNNOps(unittest.TestCase):
         )
         +
         generate_cases(
-            [0, 1, 2, 3],
+            [0, 1, 2, 3, -1],
             [
                 (2, 3, 4, 5),
                 (10, 20, 30, 40),
