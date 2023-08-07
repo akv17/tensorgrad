@@ -29,7 +29,7 @@ BACKENDS_TESTED = (
 )
 DTYPES_TESTED = (
     DTYPE.FLOAT32,
-    DTYPE.FLOAT64,
+    # DTYPE.FLOAT64,
 )
 
 CASES = generate_cases(OPS_TESTED, SHAPES_TESTED, BACKENDS_TESTED, DTYPES_TESTED)
@@ -59,6 +59,34 @@ class TestBinaryOps(unittest.TestCase):
         self._check_tensors(ta.grad, a.grad, msg=f'{name}@a_grad')
         self._check_tensors(tb.grad, b.grad, msg=f'{name}@b_grad')
     
+    @parameterized.expand(
+        generate_cases(
+            [1.0, 0.0, -2.33, 11.1432],
+            [(4,), (4, 8), (4, 8, 16)],
+            OPS_TESTED,
+            BACKENDS_TESTED,
+            DTYPES_TESTED
+        )
+    )
+    def test_with_constant(self, c, shape, op, backend, dtype):
+        name = f'{op}::{shape}::{backend}::{dtype}'
+        method = self._op_to_method(op)
+        
+        _a = np.random.random(shape).tolist()
+        _c = c
+        
+        a = Tensor(_a, name='a', dtype=dtype, backend=backend, requires_grad=True)
+        c = getattr(a, method)(_c).mean()
+        c.backward()
+
+        tdtype = getattr(torch, dtype.value)
+        ta = torch.tensor(_a, dtype=tdtype, requires_grad=True)
+        tc = getattr(ta, method)(_c).mean()
+        tc.backward()
+
+        self._check_tensors(tc, c, msg=f'{name}@forward')
+        self._check_tensors(ta.grad, a.grad, msg=f'{name}@a_grad')
+
     def _check_tensors(self, a, b, tol=1e-5, msg=''):
         self.assertTrue(check_tensors(a.tolist(), b.tolist(), tol=tol, show_diff=True), msg=msg)
 

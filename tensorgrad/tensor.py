@@ -1,4 +1,5 @@
 from uuid import uuid4
+from collections import namedtuple
 
 from .const import DTYPE, OP, BACKEND
 from .backend import BackendDispatch
@@ -48,12 +49,14 @@ class Tensor:
         return out
 
     def __add__(self, other):
+        other = self._wrap_constant_maybe(other)
         out = OpDispatch.execute(OP.ADD, self, other)
         return out
 
     __radd__ = __add__
 
     def __sub__(self, other):
+        other = self._wrap_constant_maybe(other)
         out = OpDispatch.execute(OP.SUB, self, other)
         return out
 
@@ -61,12 +64,14 @@ class Tensor:
         return other - self
     
     def __mul__(self, other):
+        other = self._wrap_constant_maybe(other)
         out = OpDispatch.execute(OP.MUL, self, other)
         return out
 
     __rmul__ = __mul__
 
     def __truediv__(self, other):
+        other = self._wrap_constant_maybe(other)
         out = OpDispatch.execute(OP.DIV, self, other)
         return out
 
@@ -76,6 +81,11 @@ class Tensor:
     def __pow__(self, value):
         assert isinstance(value, (int, float))
         out = OpDispatch.execute(OP.POW, self, value=value)
+        return out
+    
+    def __neg__(self):
+        neg = self._wrap_constant_maybe(-1.0)
+        out = OpDispatch.execute(OP.MUL, self, neg)
         return out
 
     def exp(self):
@@ -190,3 +200,12 @@ class Tensor:
             backend=self.backend
         )
         return ob
+
+    def _wrap_constant_maybe(self, value):
+        if isinstance(value, (float, int)):
+            value = self._backend.tensor(value, dtype=self.dtype)
+            tensor = self._copy_from_data(value)
+            tensor.requires_grad = False
+            value = tensor
+        return value
+    
