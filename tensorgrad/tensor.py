@@ -61,6 +61,7 @@ class Tensor:
         return out
 
     def __rsub__(self, other):
+        other = self._wrap_constant_maybe(other)
         return other - self
     
     def __mul__(self, other):
@@ -76,6 +77,7 @@ class Tensor:
         return out
 
     def __rtruediv__(self, other):
+        other = self._wrap_constant_maybe(other)
         return other / self
 
     def __pow__(self, value):

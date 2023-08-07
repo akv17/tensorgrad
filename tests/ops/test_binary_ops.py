@@ -87,6 +87,38 @@ class TestBinaryOps(unittest.TestCase):
         self._check_tensors(tc, c, msg=f'{name}@forward')
         self._check_tensors(ta.grad, a.grad, msg=f'{name}@a_grad')
 
+    @parameterized.expand(
+        generate_cases(
+            OPS_TESTED,
+            BACKENDS_TESTED,
+            DTYPES_TESTED
+        )
+    )
+    def test_rdunders(self, op, backend, dtype):
+        name = f'{op}::{backend}::{dtype}'
+        shape = (4,)
+        _a = np.random.random(shape).tolist()
+        _c = 2.7
+
+        a = Tensor(_a, name='a', dtype=dtype, backend=backend, requires_grad=False)
+
+        if op == OP.ADD:
+            left = a + _c
+            right = _c + a
+            self.assertTrue(check_tensors(left.tolist(), right.tolist(), tol=1e-5), msg=f'add@{name}')
+        elif op == OP.MUL:
+            left = a * _c
+            right = _c * a
+            self.assertTrue(check_tensors(left.tolist(), right.tolist(), tol=1e-5), msg=f'mul@{name}')
+        elif op == OP.SUB:
+            left = a - _c
+            right = _c - a
+            self.assertFalse(check_tensors(left.tolist(), right.tolist(), tol=1e-5), msg=f'sub@{name}')
+        elif op == OP.DIV:
+            left = a / _c
+            right = _c / a
+            self.assertFalse(check_tensors(left.tolist(), right.tolist(), tol=1e-5), msg=f'div@{name}')
+
     def _check_tensors(self, a, b, tol=1e-5, msg=''):
         self.assertTrue(check_tensors(a.tolist(), b.tolist(), tol=tol, show_diff=True), msg=msg)
 
