@@ -1,4 +1,5 @@
 from .interface import Op
+from .util import accumulate_broadcasted_grad
 from ..const import OP
 
 
@@ -133,7 +134,6 @@ class Softmax(Op):
         self.x.grad += d_grad
 
 
-
 class Matmul:
     NAME = OP.MATMUL
 
@@ -149,7 +149,7 @@ class Matmul:
 
     def backward(self):
         # notes on handling multidim tensors:
-        # - no matter how many dims the tensors have, this op may always be seen as collection of 2d matmuls.
+        # - no matter how many dims tensors have, this op may always be seen as collection of 2d matmuls.
         # - to leverage this we reshape all tensors to 3d shape [-1, prelast_dim, last_dim]
         # - then computing local grads is simple:
         #       downstream_grad_a = upstream_grad * b.T
@@ -163,6 +163,7 @@ class Matmul:
             b = b.reshape(-1, b.shape[-2], b.shape[-1])
             b = b.permute([0, 2, 1])
             d_grad = u_grad.matmul(b)
+            d_grad = accumulate_broadcasted_grad(self.a, d_grad)
             d_grad = d_grad.reshape(self.a.shape)
             self.a.grad += d_grad
         if self.b.requires_grad:
@@ -172,5 +173,6 @@ class Matmul:
             a = a.reshape(-1, a.shape[-2], a.shape[-1])
             a = a.permute([0, 2, 1])
             d_grad = a.matmul(u_grad)
+            d_grad = accumulate_broadcasted_grad(self.b, d_grad)
             d_grad = d_grad.reshape(self.b.shape)
             self.b.grad += d_grad

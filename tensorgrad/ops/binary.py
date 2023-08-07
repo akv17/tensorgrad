@@ -1,4 +1,5 @@
 from .interface import Op
+from .util import accumulate_broadcasted_grad
 from ..const import OP
 
 
@@ -17,9 +18,13 @@ class Add(Op):
 
     def backward(self):
         if self.a.requires_grad:
-            self.a.grad += self.out.grad
+            a_grad = self.out.grad
+            a_grad = accumulate_broadcasted_grad(self.a, a_grad)
+            self.a.grad += a_grad
         if self.b.requires_grad:
-            self.b.grad += self.out.grad
+            b_grad = self.out.grad
+            b_grad = accumulate_broadcasted_grad(self.b, b_grad)
+            self.b.grad += b_grad
 
 
 class Sub(Op):
@@ -37,9 +42,13 @@ class Sub(Op):
 
     def backward(self):
         if self.a.requires_grad:
-            self.a.grad += self.out.grad
+            a_grad = self.out.grad
+            a_grad = accumulate_broadcasted_grad(self.a, a_grad)
+            self.a.grad += a_grad
         if self.b.requires_grad:
-            self.b.grad += -1.0 * self.out.grad
+            b_grad = -1.0 * self.out.grad
+            b_grad = accumulate_broadcasted_grad(self.b, b_grad)
+            self.b.grad += b_grad
 
 
 class Mul(Op):
@@ -57,9 +66,13 @@ class Mul(Op):
 
     def backward(self):
         if self.a.requires_grad:
-            self.a.grad += self.b.data * self.out.grad
+            a_grad = self.b.data
+            a_grad = accumulate_broadcasted_grad(self.a, a_grad)
+            self.a.grad += a_grad
         if self.b.requires_grad:
-            self.b.grad += self.a.data * self.out.grad
+            b_grad = self.a.data
+            b_grad = accumulate_broadcasted_grad(self.b, b_grad)
+            self.b.grad += b_grad
 
 
 class Div(Op):
@@ -77,6 +90,10 @@ class Div(Op):
 
     def backward(self):
         if self.a.requires_grad:
-            self.a.grad += 1.0 / self.b.data * self.out.grad
+            a_grad = 1.0 / self.b.data * self.out.grad
+            a_grad = accumulate_broadcasted_grad(self.a, a_grad)
+            self.a.grad += a_grad
         if self.b.requires_grad:
-            self.b.grad += (-self.a.data / (self.b.data ** 2)) * self.out.grad
+            b_grad = (-self.a.data / (self.b.data ** 2)) * self.out.grad
+            b_grad = accumulate_broadcasted_grad(self.b, b_grad)
+            self.b.grad += b_grad
