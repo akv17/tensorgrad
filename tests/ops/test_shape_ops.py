@@ -125,6 +125,52 @@ class TestShapeOps(unittest.TestCase):
     def test_reshape(self, shapes, backend, dtype):
         shape_in, shape_out = shapes
         self._test(shape=shape_in, op=OP.RESHAPE, backend=backend, dtype=dtype, args=(shape_out,))
+    
+    @parameterized.expand(
+        generate_cases(
+            [
+                [(4, 1), (0, 1)],
+                [(1, 4), (1, 0)],
+                [(2, 3), (0, 1)],
+                [(2, 3), (1, 0)],
+                [(2, 3, 4), (0, 1, 2)],
+                [(2, 3, 4), (1, 0, 2)],
+                [(2, 3, 4), (1, 2, 0)],
+                [(2, 3, 4), (0, 2, 1)],
+                [(2, 3, 4), (2, 0, 1)],
+                [(2, 3, 4), (2, 1, 0)],
+                [(2, 3, 4, 5), (0, 1, 2, 3)],
+                [(2, 3, 4, 5), (1, 0, 2, 3)],
+                [(2, 3, 4, 5), (0, 2, 1, 3)],
+                [(2, 3, 4, 5), (1, 2, 0, 3)],
+                [(2, 3, 4, 5), (2, 0, 1, 3)],
+                [(2, 3, 4, 5), (2, 1, 0, 3)],
+                [(2, 3, 4, 5), (0, 1, 3, 2)],
+                [(2, 3, 4, 5), (1, 0, 3, 2)],
+                [(2, 3, 4, 5), (0, 2, 3, 1)],
+                [(2, 3, 4, 5), (1, 2, 3, 0)],
+                [(2, 3, 4, 5), (2, 0, 3, 1)],
+                [(2, 3, 4, 5), (2, 1, 3, 0)],
+                [(2, 3, 4, 5), (0, 3, 1, 2)],
+                [(2, 3, 4, 5), (1, 3, 0, 2)],
+                [(2, 3, 4, 5), (0, 3, 2, 1)],
+                [(2, 3, 4, 5), (1, 3, 2, 0)],
+                [(2, 3, 4, 5), (2, 3, 0, 1)],
+                [(2, 3, 4, 5), (2, 3, 1, 0)],
+                [(2, 3, 4, 5), (3, 0, 1, 2)],
+                [(2, 3, 4, 5), (3, 1, 0, 2)],
+                [(2, 3, 4, 5), (3, 0, 2, 1)],
+                [(2, 3, 4, 5), (3, 1, 2, 0)],
+                [(2, 3, 4, 5), (3, 2, 0, 1)],
+                [(2, 3, 4, 5), (3, 2, 1, 0)],
+            ],
+            BACKENDS_TESTED,
+            DTYPES_TESTED
+        )
+    )
+    def test_permute(self, shapes, backend, dtype):
+        shape_in, dims = shapes
+        self._test(shape=shape_in, op=OP.PERMUTE, backend=backend, dtype=dtype, args=(dims,))
 
     def _test(self, shape, op, backend, dtype, args=None, kwargs=None):
         args = args or ()
@@ -154,4 +200,5 @@ class TestShapeOps(unittest.TestCase):
             OP.SQUEEZE: 'squeeze',
             OP.UNSQUEEZE: 'unsqueeze',
             OP.RESHAPE: 'reshape',
+            OP.PERMUTE: 'permute',
         }[op]

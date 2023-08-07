@@ -1,7 +1,7 @@
 from .unary import Pow, Exp, Log
 from .binary import Add, Mul, Sub, Div
 from .reduce import SumReduce, MeanReduce
-from .shape import Unsqueeze, Squeeze, Reshape
+from .shape import Unsqueeze, Squeeze, Reshape, Permute
 from .nn import Relu, Sigmoid, Softmax, Matmul
 
 _OPS = (
@@ -20,6 +20,7 @@ _OPS = (
     Squeeze,
     Unsqueeze,
     Reshape,
+    Permute,
 
     Relu,
     Sigmoid,

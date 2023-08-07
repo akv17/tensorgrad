@@ -56,3 +56,22 @@ class Reshape(Op):
     def backward(self):
         if self.x.requires_grad:
             self.x.grad += self.out.grad.reshape(self.x.grad.shape)
+
+
+class Permute(Op):
+    NAME = OP.PERMUTE
+
+    def __init__(self, x, *, dims):
+        self.out = None
+        self.x = x
+        self.dims = dims
+        self.dims_grad = tuple(self.dims.index(i) for i in range(self.x.ndim))
+    
+    def forward(self):
+        data = self.x.data.permute(self.dims)
+        self.out = self.x.from_data(data)
+        return self.out
+
+    def backward(self):
+        if self.x.requires_grad:
+            self.x.grad += self.out.grad.permute(self.dims_grad)
