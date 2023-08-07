@@ -43,6 +43,10 @@ class Tensor:
     def __repr__(self):
         return f'Tensor(name={self.name}, shape={self.shape}, dtype={self.dtype}, backend={self.backend})'
 
+    def __getitem__(self, slice_):
+        out = OpDispatch.execute(OP.SELECT, self, slice_=slice_)
+        return out
+
     def __add__(self, other):
         out = OpDispatch.execute(OP.ADD, self, other)
         return out

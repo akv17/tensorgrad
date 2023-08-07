@@ -97,6 +97,10 @@ class NumpyTensor:
     def __repr__(self):
         return f'NumpyTensor({repr(self.data)})'
 
+    def __getitem__(self, slice_):
+        out = self._new(self.data[slice_])
+        return out
+
     def __add__(self, other):
         other = self._maybe_wrap_constant(other)
         out = self._new(self.data + other.data)
@@ -206,6 +210,12 @@ class NumpyTensor:
         dim_last = out.shape[-1]
         dim_prelast = out.shape[-2]
         out[..., range(dim_prelast), range(dim_last)] = other.data
+        out = self._new(out)
+        return out
+
+    def put(self, slice_, other):
+        out = self.data.copy()
+        out[slice_] = other.data
         out = self._new(out)
         return out
 

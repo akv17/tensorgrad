@@ -172,6 +172,30 @@ class TestShapeOps(unittest.TestCase):
         shape_in, dims = shapes
         self._test(shape=shape_in, op=OP.PERMUTE, backend=backend, dtype=dtype, args=(dims,))
 
+    @parameterized.expand(
+        generate_cases(
+            [
+                [(3, 4), 0],
+                [(3, 4), (slice(None), 0)],
+                [(3, 4), (0, slice(None))],
+                [(4, 5), (slice(1, 3), slice(None))],
+                [(4, 5), (slice(None), slice(2, 4))],
+                [(4, 5), (1, slice(2, 4))],
+                [(4, 5), (slice(1, 3), 4)],
+                [(4, 5), (1, 4)],
+                [(2, 3, 4), 0],
+                [(2, 3, 4), (slice(None), slice(1, 2))],
+                [(2, 3, 4), (0, slice(1, 2), -1)],
+                [(2, 3, 4), (slice(0, 1), slice(1, 2), slice(2, 3))],
+            ],
+            BACKENDS_TESTED,
+            DTYPES_TESTED,
+        )
+    )
+    def test_select(self, arg, backend, dtype):
+        shape, arg = arg
+        self._test(shape=shape, op=OP.SELECT, backend=backend, dtype=dtype, args=(arg,))
+
     def _test(self, shape, op, backend, dtype, args=None, kwargs=None):
         args = args or ()
         kwargs = kwargs or {}
@@ -201,4 +225,5 @@ class TestShapeOps(unittest.TestCase):
             OP.UNSQUEEZE: 'unsqueeze',
             OP.RESHAPE: 'reshape',
             OP.PERMUTE: 'permute',
+            OP.SELECT: '__getitem__',
         }[op]
