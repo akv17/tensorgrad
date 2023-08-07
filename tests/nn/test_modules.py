@@ -57,3 +57,40 @@ class TestModules(unittest.TestCase):
     
     def _check_tensors(self, a, b, tol=1e-5, msg=''):
         self.assertTrue(check_tensors(a.tolist(), b.tolist(), tol=tol), msg=msg)
+
+    @parameterized.expand(
+        generate_cases(
+            [
+                (4, 1),
+                (4, 2),
+                (16, 8),
+                (128, 32),
+                (256, 128),
+            ],
+            BACKENDS_TESTED,
+            DTYPES_TESTED
+        )
+    )
+    def test_cross_entropy_loss(self, shape, backend, dtype):
+        num_samples, num_classes = shape
+        name = f'{num_samples}::{num_classes}::{backend}::{dtype}'
+
+        _logits = np.random.uniform(-1.0, 1.0, size=(num_samples, num_classes)).tolist()
+        _targets = np.random.randint(0, num_classes, size=(num_samples,)).tolist()
+
+        tdtype = getattr(torch, dtype.value)
+        tlogits = torch.tensor(_logits, dtype=tdtype, requires_grad=True)
+        ttargets = torch.tensor(_targets, requires_grad=False).long()
+        tloss = torch.nn.CrossEntropyLoss()(tlogits, ttargets)
+        tloss.backward()
+
+        logits = tensorgrad.Tensor(_logits, name='logits', requires_grad=True)
+        targets = tensorgrad.Tensor(_targets, name='targets', dtype=tensorgrad.DTYPE.INT64, requires_grad=False)
+        loss = tensorgrad.nn.CrossEntropyLoss().forward(logits, targets)
+        loss.backward()
+
+        self._check_tensors(tloss, loss, msg=f'{name}@forward')
+        self._check_tensors(tlogits.grad, logits.grad, msg=f'{name}@x_grad')
+    
+    def _check_tensors(self, a, b, tol=1e-5, msg=''):
+        self.assertTrue(check_tensors(a.tolist(), b.tolist(), tol=tol), msg=msg)
