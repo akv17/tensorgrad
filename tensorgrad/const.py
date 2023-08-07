@@ -24,6 +24,7 @@ class OP(str, Enum):
 
     SQUEEZE = 'squeeze'
     UNSQUEEZE = 'unsqueeze'
+    RESHAPE = 'reshape'
 
     RELU = 'relu'
     SIGMOID = 'sigmoid'

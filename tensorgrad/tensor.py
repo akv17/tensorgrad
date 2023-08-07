@@ -102,6 +102,10 @@ class Tensor:
         out = OpDispatch.execute(OP.SOFTMAX, self, dim=dim)
         return out
 
+    def reshape(self, shape):
+        out = OpDispatch.execute(OP.RESHAPE, self, shape=shape)
+        return out
+
     def squeeze(self, dim):
         out = OpDispatch.execute(OP.SQUEEZE, self, dim=dim)
         return out

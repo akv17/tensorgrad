@@ -26,7 +26,6 @@ class TestShapeOps(unittest.TestCase):
             [
                 (1, 10),
             ],
-            [OP.SQUEEZE],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
@@ -36,7 +35,6 @@ class TestShapeOps(unittest.TestCase):
             [
                 (10, 1),
             ],
-            [OP.SQUEEZE],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
@@ -46,7 +44,6 @@ class TestShapeOps(unittest.TestCase):
             [
                 (1, 10, 10),
             ],
-            [OP.SQUEEZE],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
@@ -56,7 +53,6 @@ class TestShapeOps(unittest.TestCase):
             [
                 (10, 1, 10),
             ],
-            [OP.SQUEEZE],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
@@ -66,13 +62,12 @@ class TestShapeOps(unittest.TestCase):
             [
                 (10, 10, 1),
             ],
-            [OP.SQUEEZE],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
     )
-    def test_squeeze(self, dim, shape, op, backend, dtype):
-        self._test(dim=dim, shape=shape, op=op, backend=backend, dtype=dtype)
+    def test_squeeze(self, dim, shape, backend, dtype):
+        self._test(shape=shape, op=OP.SQUEEZE, backend=backend, dtype=dtype, kwargs={'dim': dim})
 
     @parameterized.expand(
         generate_cases(
@@ -83,7 +78,6 @@ class TestShapeOps(unittest.TestCase):
                 (100,),
                 (1000,),
             ],
-            [OP.UNSQUEEZE],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
@@ -94,7 +88,6 @@ class TestShapeOps(unittest.TestCase):
                 (5, 10),
                 (50, 100),
             ],
-            [OP.UNSQUEEZE],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
@@ -105,27 +98,49 @@ class TestShapeOps(unittest.TestCase):
                 (2, 5, 10),
                 (5, 50, 100),
             ],
-            [OP.UNSQUEEZE],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
     )
-    def test_unsqueeze(self, dim, shape, op, backend, dtype):
-        self._test(dim=dim, shape=shape, op=op, backend=backend, dtype=dtype)
+    def test_unsqueeze(self, dim, shape, backend, dtype):
+        self._test(shape=shape, op=OP.UNSQUEEZE, backend=backend, dtype=dtype, kwargs={'dim': dim})
 
-    def _test(self, dim, shape, op, backend, dtype):
-        name = f'{op}::{shape}::{dim}::{backend}::{dtype}'
+    @parameterized.expand(
+        generate_cases(
+            [
+                [(6,), (2, 3)],
+                [(3, 1), (1, 3)],
+                [(3, 4), (2, 6)],
+                [(2, 3, 4), (2, 12)],
+                [(2, 12), (2, 3, 4)],
+                [(2, 3, 4, 5), (6, 4, 5)],
+                [(2, 3, 4, 5), (-1, 5)],
+                [(2, 3, 4, 5), (24, -1)],
+                [(2, 3, 4, 5), (-1,)],
+            ],
+            BACKENDS_TESTED,
+            DTYPES_TESTED
+        )
+    )
+    def test_reshape(self, shapes, backend, dtype):
+        shape_in, shape_out = shapes
+        self._test(shape=shape_in, op=OP.RESHAPE, backend=backend, dtype=dtype, args=(shape_out,))
+
+    def _test(self, shape, op, backend, dtype, args=None, kwargs=None):
+        args = args or ()
+        kwargs = kwargs or {}
+        name = f'{op}::{shape}::{backend}::{dtype}::{args}::{kwargs}'
         method = self._op_to_method(op)
 
         _x = np.random.random(shape).tolist()
 
         x = Tensor(_x, name='x', dtype=dtype, backend=backend, requires_grad=True)
-        y = getattr(x, method)(dim=dim).exp().sum()
+        y = getattr(x, method)(*args, **kwargs).log().sum()
         y.backward()
 
         tdtype = getattr(torch, dtype.value)
         tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
-        ty = getattr(tx, method)(dim=dim).exp().sum()
+        ty = getattr(tx, method)(*args, **kwargs).log().sum()
         ty.backward()
 
         self._check_tensors(ty, y, msg=f'{name}@forward')
@@ -138,4 +153,5 @@ class TestShapeOps(unittest.TestCase):
         return {
             OP.SQUEEZE: 'squeeze',
             OP.UNSQUEEZE: 'unsqueeze',
+            OP.RESHAPE: 'reshape',
         }[op]
