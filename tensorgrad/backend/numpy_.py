@@ -35,14 +35,35 @@ class NumpyBackend:
         return ob
 
     @classmethod
+    def random_uniform(cls, a, b, shape, dtype=None):
+        dtype = dtype or DTYPE.FLOAT32
+        np = cls._get_numpy()
+        data = np.random.uniform(a, b, size=shape)
+        ob = NumpyTensor(np=np, data=data)
+        return ob
+
+    @classmethod
     def map_dtype(cls, dtype):
         np = cls._get_numpy()
         dispatch = {
+            None: np.float32,
             DTYPE.FLOAT32: np.float32,
             DTYPE.FLOAT64: np.float64,
             DTYPE.INT32: np.int32,
             DTYPE.INT64: np.int64,
             DTYPE.BOOL: bool,
+        }
+        return dispatch[dtype]
+    
+    @classmethod
+    def imap_dtype(cls, dtype):
+        np = cls._get_numpy()
+        dispatch = {
+            np.float32: DTYPE.FLOAT32,
+            np.float64: DTYPE.FLOAT64,
+            np.int32: DTYPE.INT32,
+            np.int64: DTYPE.INT64,
+            bool: DTYPE.BOOL,
         }
         return dispatch[dtype]
 
@@ -59,7 +80,11 @@ class NumpyTensor:
     def __init__(self, np, data):
         self.np = np
         self.data = data
-        self.dtype = self.data.dtype
+
+    @property
+    def dtype(self):
+        value = NumpyBackend.imap_dtype(self.data.dtype)
+        return value
 
     @property
     def shape(self):

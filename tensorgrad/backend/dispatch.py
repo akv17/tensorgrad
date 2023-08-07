@@ -7,7 +7,12 @@ _DISPATCH = {
 
 
 class BackendDispatch:
+    DEFAULT_BACKEND = BACKEND.NUMPY
 
     @classmethod
-    def get(cls, name):
+    def get(cls, name=None):
+        name = name or cls.DEFAULT_BACKEND
         return _DISPATCH[name]
+
+    def get_default(cls):
+        return _DISPATCH[cls.DEFAULT_BACKEND]

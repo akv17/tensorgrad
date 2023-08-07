@@ -102,11 +102,18 @@ class Tensor:
         out = OpDispatch.execute(OP.SOFTMAX, self, dim=dim)
         return out
 
-    def reshape(self, shape):
+    def reshape(self, *shape):
+        shape = shape[0] if len(shape) == 1 and isinstance(shape[0], (tuple, list)) else shape
         out = OpDispatch.execute(OP.RESHAPE, self, shape=shape)
         return out
     
-    def permute(self, dims):
+    def permute(self, *dims):
+        dims = dims[0] if len(dims) == 1 and isinstance(dims[0], (tuple, list)) else dims
+        out = OpDispatch.execute(OP.PERMUTE, self, dims=dims)
+        return out
+    
+    def transpose(self, *dims):
+        dims = dims[0] if len(dims) == 1 and isinstance(dims[0], (tuple, list)) else dims
         out = OpDispatch.execute(OP.PERMUTE, self, dims=dims)
         return out
 
