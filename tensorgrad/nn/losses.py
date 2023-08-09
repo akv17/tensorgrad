@@ -8,8 +8,7 @@ class CrossEntropyLoss:
         return out
 
     def forward(self, outputs, targets):
-        # softmax = outputs.softmax(dim=-1)
-        softmax = outputs
+        softmax = outputs.softmax(dim=-1)
         true_ixs = targets.tolist()
         pred = softmax[range(softmax.shape[0]), true_ixs]
         pred = pred.log()
