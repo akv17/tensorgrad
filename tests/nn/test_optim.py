@@ -16,14 +16,13 @@ class TestOptim(unittest.TestCase):
 
     @parameterized.expand(
         generate_cases(
-            [(4,), (128), (1024)],
+            [(4,), (128), (16, 32), (8, 16, 32)],
             [1, 4, 16],
             [0.1, 0.001, 1e-5],
             [None, 0.9],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
-            
     )
     def test_sgd(self, shape, num_steps, lr, momentum, backend, dtype):
         name = f'{shape}::{num_steps}::{lr}::{momentum}::{backend}::{dtype}'
