@@ -150,22 +150,9 @@ class Tensor:
         else:
             upstream = self._backend.ones(self.shape, dtype=self.dtype)
         self.grad = upstream
-        visited = set()
-        nodes_sorted = []
-
-        def _traverse(node):
-            if id(node) in visited:
-                return
-            visited.add(id(node))
-            for ch in node._children:
-                _traverse(ch)
-            nodes_sorted.append(node)
-        
-        _traverse(self)
-        for node in reversed(nodes_sorted):
-            if node.requires_grad:
-                print(node)
-                node._backward()
+        nodes = self._traverse()
+        for node in reversed(nodes):
+            node._backward()
 
     def copy(self):
         ob = self._copy_from_data(self.data)
@@ -215,3 +202,17 @@ class Tensor:
             value = tensor
         return value
     
+    def _traverse(self):
+        nodes_sorted = []
+        visited = set()
+        
+        def __traverse(node):
+            if id(node) in visited:
+                return
+            visited.add(id(node))
+            for ch in node._children:
+                __traverse(ch)
+            nodes_sorted.append(node)
+        
+        __traverse(self)
+        return nodes_sorted
