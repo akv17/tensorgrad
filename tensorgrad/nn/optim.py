@@ -10,7 +10,7 @@ class SGD:
 
     def zero_grad(self):
         for p in self.parameters:
-            p.zero_grad_()
+            p.grad = p.grad.zeros_like()
 
     def step(self):
         self._step += 1
@@ -23,5 +23,4 @@ class SGD:
                     b = g
                 self._momentum_buffer[pi] = b
                 g = b
-            update = -self.lr * g
-            p.update_(update)
+            p.data -= self.lr * g
