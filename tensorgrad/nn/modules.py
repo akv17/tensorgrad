@@ -70,6 +70,88 @@ class Linear(Module):
                 b = bias
             bias = Tensor(b, name=f'bias@{self.name}', backend=self.backend, dtype=self.dtype)
             self.bias = Parameter(bias)
+        return self
 
     def parameters(self):
         return [self.weight, self.bias]
+
+
+class ReLU(Module):
+
+    def __call__(self, *args, **kwargs):
+        out = self.forward(*args, **kwargs)
+        return out
+    
+    def forward(self, x):
+        x = x.relu()
+        return x
+    
+    def initialize(self):
+        pass
+    
+    def parameters(self):
+        return []
+
+
+class Identity(Module):
+
+    def __call__(self, *args, **kwargs):
+        out = self.forward(*args, **kwargs)
+        return out
+    
+    def forward(self, x):
+        return x
+    
+    def initialize(self):
+        pass
+    
+    def parameters(self):
+        return []
+
+
+class Sigmoid(Module):
+
+    def __call__(self, *args, **kwargs):
+        out = self.forward(*args, **kwargs)
+        return out
+    
+    def forward(self, x):
+        x = x.sigmoid()
+        return x
+    
+    def initialize(self):
+        pass
+    
+    def parameters(self):
+        return []
+
+
+class Sequential(Module):
+
+    def __init__(self, *modules):
+        self.modules = tuple(modules)
+
+    def __len__(self):
+        return len(self.modules)
+
+    def __iter__(self):
+        return iter(self.modules)
+    
+    def __getitem__(self, ix):
+        return self.modules[ix]
+
+    def __call__(self, *args, **kwargs):
+        out = self.forward(*args, **kwargs)
+        return out
+    
+    def forward(self, x):
+        for mod in self.modules:
+            x = mod(x)
+        return x
+    
+    def initialize(self):
+        pass
+
+    def parameters(self):
+        return [p for m in self.modules for p in m.parameters()]
+    

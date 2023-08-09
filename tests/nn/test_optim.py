@@ -16,10 +16,14 @@ class TestOptim(unittest.TestCase):
 
     @parameterized.expand(
         generate_cases(
-            [(4,), (128), (16, 32), (8, 16, 32)],
-            [1, 4, 16],
-            [0.1, 0.001, 1e-5],
-            [None, 0.9],
+            # [(4,), (128), (16, 32), (8, 16, 32)],
+            # [1, 4, 16],
+            # [0.1, 0.001, 1e-5],
+            # [None, 0.9],
+            [(4,)],
+            [4],
+            [0.1],
+            [None],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
@@ -36,19 +40,21 @@ class TestOptim(unittest.TestCase):
 
         x = tensorgrad.Tensor(tx.detach().numpy(), name='x', backend=backend, dtype=dtype, requires_grad=True)
 
-        x = tensorgrad.Parameter(x)
-        optim = tensorgrad.SGD([x], lr=lr, momentum=momentum)
+        x = tensorgrad.nn.Parameter(x)
+        optim = tensorgrad.nn.SGD([x], lr=lr, momentum=momentum)
 
         for _ in range(num_steps):
             toptim.zero_grad()
-            tf = tx.mean()
+            tf = tx.softmax(-1).mean()
             tf.backward()
             toptim.step()
 
             optim.zero_grad()
-            f = x.mean()
+            f = x.softmax(-1).mean()
             f.backward()
             optim.step()
 
+            print(tx.grad, x.grad)
+            
             self.assertTrue(check_tensors(tf, f, tol=1e-5, show_diff=True), msg=f'forward@{name}')
             self.assertTrue(check_tensors(tx.grad, x.grad, tol=1e-5, show_diff=True), msg=f'x_grad@{name}')

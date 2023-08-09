@@ -41,13 +41,13 @@ class TestModules(unittest.TestCase):
         tdtype = getattr(torch, dtype.value)
         tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
         tlinear = torch.nn.Linear(in_features=in_features, out_features=out_features, bias=bias)
-        ty = tlinear(tx).sum()
+        ty = tlinear(tx).softmax(-1).sum()
         ty.backward()
 
         linear = tensorgrad.nn.Linear(in_features=in_features, out_features=out_features, bias=bias)
         linear.initialize(weight=tlinear.weight.data.numpy(), bias=tlinear.bias.data.numpy() if bias else None)
         x = tensorgrad.Tensor(_x, name='x', dtype=dtype, backend=backend, requires_grad=True)
-        y = linear(x).sum()
+        y = linear(x).softmax(-1).sum()
         y.backward()
 
         self._check_tensors(ty, y, msg=f'{name}@forward')

@@ -163,7 +163,9 @@ class Tensor:
         
         _traverse(self)
         for node in reversed(nodes_sorted):
-            node._backward()
+            if node.requires_grad:
+                print(node)
+                node._backward()
 
     def copy(self):
         ob = self._copy_from_data(self.data)
@@ -187,6 +189,9 @@ class Tensor:
     
     def tolist(self):
         return self.data.tolist()
+    
+    def item(self):
+        return self.tolist()
 
     def render(self):
         from .render import render_graph
