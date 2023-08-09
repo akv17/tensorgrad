@@ -5,7 +5,7 @@ from parameterized import parameterized
 
 from tensorgrad.tensor import Tensor
 from tensorgrad.const import DTYPE, BACKEND, OP
-from ..util import require_torch, check_tensors, generate_cases
+from tests.util import require_torch, check_tensors, generate_cases
 
 torch = require_torch()
 
@@ -74,7 +74,7 @@ class TestUnaryOps(unittest.TestCase):
         self._check_tensors(tx.grad, x.grad, msg=f'{name}@x_grad')
 
     def _check_tensors(self, a, b, tol=1e-5, msg=''):
-        self.assertTrue(check_tensors(a.tolist(), b.tolist(), tol=tol), msg=msg)
+        self.assertTrue(check_tensors(a, b, tol=tol), msg=msg)
 
     def _op_to_method(self, op):
         return {

@@ -12,8 +12,8 @@ def require_torch():
 
 
 def check_tensors(a, b, tol=1e-5, show_diff=False):
-    a = np.array(a)
-    b = np.array(b)
+    a = np.array(a.tolist()) if hasattr(a, 'tolist') else np.array(a)
+    b = np.array(b.tolist()) if hasattr(b, 'tolist') else np.array(b)
     assert a.shape == b.shape, f'shape mismatch: {a.shape}, {b.shape}'
     flag = np.allclose(a, b, rtol=tol, atol=tol)
     if show_diff and not flag:

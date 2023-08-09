@@ -5,7 +5,7 @@ from parameterized import parameterized
 
 import tensorgrad
 from tensorgrad.const import BACKEND, DTYPE
-from ..util import require_torch, check_tensors, generate_cases
+from tests.util import require_torch, check_tensors, generate_cases
 
 torch = require_torch()
 
@@ -93,4 +93,4 @@ class TestModules(unittest.TestCase):
         self._check_tensors(tlogits.grad, logits.grad, msg=f'{name}@x_grad')
     
     def _check_tensors(self, a, b, tol=1e-5, msg=''):
-        self.assertTrue(check_tensors(a.tolist(), b.tolist(), tol=tol), msg=msg)
+        self.assertTrue(check_tensors(a, b, tol=tol), msg=msg)
