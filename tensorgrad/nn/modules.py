@@ -34,7 +34,6 @@ class Linear(Module):
         self.name = name or f'Linear@{id(self)}'
 
         self._backend = BackendDispatch.get(backend)
-        self.dtype = None
 
         self.weight = None
         self.bias = None
@@ -61,7 +60,7 @@ class Linear(Module):
         else:
             w = weight
         weight = Tensor(w, name=f'weight@{self.name}', backend=self.backend, dtype=self.dtype)
-        self.weight = Parameter(weight)
+        self.weight = weight
         if self.with_bias:
             if bias is None:
                 k = math.sqrt(self.in_features)
@@ -69,11 +68,11 @@ class Linear(Module):
             else:
                 b = bias
             bias = Tensor(b, name=f'bias@{self.name}', backend=self.backend, dtype=self.dtype)
-            self.bias = Parameter(bias)
+            self.bias = bias
         return self
 
     def parameters(self):
-        return [self.weight, self.bias]
+        return [self.weight, self.bias] if self.with_bias else [self.weight]
 
 
 class ReLU(Module):
