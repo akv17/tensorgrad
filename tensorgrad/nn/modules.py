@@ -5,6 +5,24 @@ from ..tensor import Tensor
 from ..backend import BackendDispatch
 
 
+class Parameter:
+
+    def __init__(self, tensor):
+        self.tensor = tensor
+
+    def __repr__(self):
+        return f'Parameter<{self.tensor}>'
+
+    def __getattr__(self, name):
+        return getattr(self.tensor, name)
+
+    def update_(self, data):
+        self.tensor.data += data
+
+    def zero_grad_(self):
+        self.tensor.grad = self.tensor.grad.zeros_like()
+
+
 class Linear(Module):
     
     def __init__(self, in_features, out_features, bias=True, name=None, backend=None, dtype=None):
@@ -42,14 +60,16 @@ class Linear(Module):
             w = self._backend.random_uniform(-k, k, shape=(self.out_features, self.in_features))
         else:
             w = weight
-        self.weight = Tensor(w, name=f'weight@{self.name}', backend=self.backend, dtype=self.dtype)
+        weight = Tensor(w, name=f'weight@{self.name}', backend=self.backend, dtype=self.dtype)
+        self.weight = Parameter(weight)
         if self.with_bias:
             if bias is None:
                 k = math.sqrt(self.in_features)
                 b = self._backend.random_uniform(-k, k, shape=(self.out_features,))
             else:
                 b = bias
-            self.bias = Tensor(b, name=f'bias@{self.name}', backend=self.backend, dtype=self.dtype)
+            bias = Tensor(b, name=f'bias@{self.name}', backend=self.backend, dtype=self.dtype)
+            self.bias = Parameter(bias)
 
     def parameters(self):
         return [self.weight, self.bias]

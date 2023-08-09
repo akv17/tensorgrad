@@ -1,5 +1,4 @@
 from uuid import uuid4
-from collections import namedtuple
 
 from .const import DTYPE, OP, BACKEND
 from .backend import BackendDispatch

@@ -16,10 +16,10 @@ class TestOptim(unittest.TestCase):
 
     @parameterized.expand(
         generate_cases(
-            [(4,)],
-            [2],
-            [0.1],
-            [None],
+            [(4,), (128), (1024)],
+            [1, 4, 16],
+            [0.1, 0.001, 1e-5],
+            [None, 0.9],
             BACKENDS_TESTED,
             DTYPES_TESTED
         )
@@ -42,14 +42,14 @@ class TestOptim(unittest.TestCase):
 
         for _ in range(num_steps):
             toptim.zero_grad()
-            tf = tx.log().sum()
+            tf = tx.mean()
             tf.backward()
             toptim.step()
 
             optim.zero_grad()
-            f = x.log().sum()
+            f = x.mean()
             f.backward()
             optim.step()
 
+            self.assertTrue(check_tensors(tf, f, tol=1e-5, show_diff=True), msg=f'forward@{name}')
             self.assertTrue(check_tensors(tx.grad, x.grad, tol=1e-5, show_diff=True), msg=f'x_grad@{name}')
-
