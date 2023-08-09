@@ -37,6 +37,7 @@ class OpDispatch:
     def execute(cls, op, *args, **kwargs):
         op = _DISPATCH[op](*args, **kwargs)
         out = op.forward()
+        out.requires_grad = any(a.requires_grad for a in args)
         out._children = args
         out._op = op
         return out
