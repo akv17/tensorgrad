@@ -174,6 +174,10 @@ class NumpyTensor:
     def log(self):
         out = self._new(self.np.log(self.data))
         return out
+    
+    def sqrt(self):
+        out = self._new(self.np.sqrt(self.data))
+        return out
 
     def sum(self, dim=None):
         out = self._new(self.np.sum(self.data, dim))
@@ -246,6 +250,9 @@ class NumpyTensor:
 
     def zeros_like(self):
         return self._new(self.np.zeros_like(self.data))
+    
+    def ones_like(self):
+        return self._new(self.np.ones_like(self.data))
 
     def _new(self, data):
         return type(self)(np=self.np, data=data)
