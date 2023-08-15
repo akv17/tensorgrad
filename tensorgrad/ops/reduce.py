@@ -10,9 +10,8 @@ class SumReduce:
         self.dim = dim
 
     def forward(self):
-        self.out = self.x.zeros_like()
-        self.out.data = self.x.data.sum(dim=self.dim)
-        self.out.grad = self.out.data.zeros_like()
+        data = self.x.data.sum(dim=self.dim)
+        self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
@@ -36,9 +35,8 @@ class MeanReduce:
         self.dim = dim
 
     def forward(self):
-        self.out = self.x.zeros_like()
-        self.out.data = self.x.data.mean(dim=self.dim)
-        self.out.grad = self.out.data.zeros_like()
+        data = self.x.data.mean(dim=self.dim)
+        self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
