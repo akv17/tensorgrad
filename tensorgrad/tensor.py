@@ -10,8 +10,8 @@ class Tensor:
     def __init__(
         self,
         data,
-        dtype=DTYPE.FLOAT32,
-        backend=BACKEND.NUMPY,
+        dtype=None,
+        backend=None,
         name=None,
         requires_grad=True,
     ):
@@ -172,6 +172,10 @@ class Tensor:
     
     def ones_like(self):
         data = self._backend.ones(self.data.shape, dtype=self.dtype)
+        return self._copy_from_data(data)
+    
+    def ones(self, shape):
+        data = self._backend.ones(shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def tolist(self):
