@@ -182,15 +182,17 @@ class Matmul:
 class Conv2D(Op):
     NAME = OP.CONV2D
 
-    def __init__(self, x, kernel, *, stride=None, padding=None):
+    def __init__(self, x, kernel, bias=None, *, stride=None, padding=None):
         self.out = None
         self.x = x
         self.kernel = kernel
+        self.bias = bias
         self.stride = stride
         self.padding = padding
 
     def forward(self):
-        data = self.x.data.conv2d(self.kernel.data, stride=self.stride, padding=self.padding)
+        bias = self.bias.data if self.bias is not None else None
+        data = self.x.data.conv2d(self.kernel.data, bias=bias, stride=self.stride, padding=self.padding)
         self.out = self.x.from_data(data)
         return self.out
 

@@ -144,8 +144,9 @@ class Tensor:
         out = OpDispatch.execute(OP.MATMUL, self, other)
         return out
     
-    def conv2d(self, kernel, stride=None, padding=None):
-        out = OpDispatch.execute(OP.CONV2D, self, kernel, stride=stride, padding=padding)
+    def conv2d(self, kernel, bias=None, stride=None, padding=None):
+        children = (self, kernel, bias) if bias is not None else (self, kernel)
+        out = OpDispatch.execute(OP.CONV2D, *children, stride=stride, padding=padding)
         return out
 
     def backward(self, upstream=None):

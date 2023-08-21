@@ -191,7 +191,7 @@ class NumpyTensor:
         out = self._new(self.np.matmul(self.data, other.data))
         return out
     
-    def conv2d(self, kernel, stride=None, padding=None):
+    def conv2d(self, kernel, bias, stride=None, padding=None):
         # x: [b, c_in, h, w]
         # k: [c_out, c_in, h, w]
 
@@ -199,8 +199,9 @@ class NumpyTensor:
         import numpy as np
         x = self.data
         k = kernel.data
+        bias = bias.data if bias is not None else np.zeros((k.shape[0],), dtype=k.dtype)
         
-        b = x.shape[0]
+        bs = x.shape[0]
         c_in = x.shape[1]
         c_out = k.shape[0]
         h_in, w_in = x.shape[-2:]
@@ -214,10 +215,10 @@ class NumpyTensor:
         h_out = math.floor(((h_in + 2 * h_p - h_d * (h_k - 1) - 1) / h_s) + 1)
         w_out = math.floor(((w_in + 2 * w_p - w_d * (w_k - 1) - 1) / w_s) + 1)
 
-        res = np.zeros((b, c_out, h_out, w_out))
+        res = np.zeros((bs, c_out, h_out, w_out))
         x_pad = x
         if padding != (0, 0):
-            x_pad_shape = (b, c_in, h_in + h_p * 2, w_in + w_p * 2)
+            x_pad_shape = (bs, c_in, h_in + h_p * 2, w_in + w_p * 2)
             x_pad = np.zeros(x_pad_shape, dtype=x.dtype)
             x_pad[..., h_p:x_pad.shape[2]-h_p, w_p:x_pad.shape[3]-w_p] = x
         hh_k = math.floor(h_k / 2)
@@ -226,14 +227,14 @@ class NumpyTensor:
         h_end = x_pad.shape[2] - hh_k - 1
         w_start = hw_k
         w_end = x_pad.shape[3] - hw_k - 1
-        for bi in range(b):
+        for bi in range(bs):
             i_out = 0
             for i_in in range(h_start, h_end + 1, h_s):
                 j_out = 0
                 for j_in in range(w_start, w_end + 1, w_s):
                     xp = x_pad[bi, :, i_in-hh_k:i_in+hh_k+1, j_in-hw_k:j_in+hw_k+1]
                     for c in range(c_out):
-                        res[bi, c, i_out, j_out] = (k[c] * xp).sum()
+                        res[bi, c, i_out, j_out] = (k[c] * xp).sum() + bias[c]
                     j_out += 1
                 i_out += 1
         
