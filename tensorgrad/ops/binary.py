@@ -12,8 +12,8 @@ class Add(Op):
         self.b = b
 
     def forward(self):
-        self.out = self.a.zeros_like()
-        self.out.data = self.a.data + self.b.data
+        data = self.a.data + self.b.data
+        self.out = self.a.from_data(data)
         return self.out
 
     def backward(self):
@@ -36,8 +36,8 @@ class Sub(Op):
         self.b = b
 
     def forward(self):
-        self.out = self.a.zeros_like()
-        self.out.data = self.a.data - self.b.data
+        data = self.a.data - self.b.data
+        self.out = self.a.from_data(data)
         return self.out
 
     def backward(self):
@@ -60,8 +60,8 @@ class Mul(Op):
         self.b = b
 
     def forward(self):
-        self.out = self.a.zeros_like()
-        self.out.data = self.a.data * self.b.data
+        data = self.a.data * self.b.data
+        self.out = self.a.from_data(data)
         return self.out
 
     def backward(self):
@@ -84,8 +84,8 @@ class Div(Op):
         self.b = b
 
     def forward(self):
-        self.out = self.a.zeros_like()
-        self.out.data = self.a.data / self.b.data
+        data = self.a.data / self.b.data
+        self.out = self.a.from_data(data)
         return self.out
 
     def backward(self):

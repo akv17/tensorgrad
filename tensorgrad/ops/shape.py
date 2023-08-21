@@ -11,9 +11,8 @@ class Squeeze(Op):
         self.dim = dim
 
     def forward(self):
-        self.out = self.x.zeros_like()
-        self.out.data = self.x.data.squeeze(self.dim)
-        self.out.grad = self.out.grad.squeeze(self.dim)
+        data = self.x.data.squeeze(self.dim)
+        self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
@@ -30,9 +29,8 @@ class Unsqueeze(Op):
         self.dim = dim
 
     def forward(self):
-        self.out = self.x.zeros_like()
-        self.out.data = self.x.data.unsqueeze(self.dim)
-        self.out.grad = self.out.grad.unsqueeze(self.dim)
+        data = self.x.data.unsqueeze(self.dim)
+        self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):

@@ -11,8 +11,8 @@ class Pow(Op):
         self.value = value
     
     def forward(self):
-        self.out = self.x.zeros_like()
-        self.out.data = self.x.data ** self.value
+        data = self.x.data ** self.value
+        self.out = self.x.from_data(data)
         return self.out
     
     def backward(self):
@@ -29,8 +29,8 @@ class Exp(Op):
         self.x = x
     
     def forward(self):
-        self.out = self.x.zeros_like()
-        self.out.data = self.x.data.exp()
+        data = self.x.data.exp()
+        self.out = self.x.from_data(data)
         return self.out
     
     def backward(self):
@@ -46,8 +46,8 @@ class Log(Op):
         self.x = x
     
     def forward(self):
-        self.out = self.x.zeros_like()
-        self.out.data = self.x.data.log()
+        data = self.x.data.log()
+        self.out = self.x.from_data(data)
         return self.out
     
     def backward(self):
