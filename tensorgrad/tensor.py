@@ -143,6 +143,10 @@ class Tensor:
     def matmul(self, other):
         out = OpDispatch.execute(OP.MATMUL, self, other)
         return out
+    
+    def conv2d(self, kernel, stride=None, padding=None):
+        out = OpDispatch.execute(OP.CONV2D, self, kernel, stride=stride, padding=padding)
+        return out
 
     def backward(self, upstream=None):
         if upstream is not None:

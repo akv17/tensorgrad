@@ -2,7 +2,7 @@ from .unary import Pow, Exp, Log
 from .binary import Add, Mul, Sub, Div
 from .reduce import SumReduce, MeanReduce
 from .shape import Unsqueeze, Squeeze, Reshape, Permute, Select
-from .nn import Relu, Sigmoid, Softmax, Matmul
+from .nn import Relu, Sigmoid, Softmax, Matmul, Conv2D
 
 _OPS = (
     Pow,
@@ -27,6 +27,7 @@ _OPS = (
     Sigmoid,
     Softmax,
     Matmul,
+    Conv2D,
 )
 _DISPATCH = {op.NAME: op for op in _OPS}
 

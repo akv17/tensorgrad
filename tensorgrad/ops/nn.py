@@ -176,3 +176,23 @@ class Matmul:
             d_grad = accumulate_broadcasted_grad(self.b, d_grad)
             d_grad = d_grad.reshape(self.b.shape)
             self.b.grad += d_grad
+
+
+
+class Conv2D(Op):
+    NAME = OP.CONV2D
+
+    def __init__(self, x, kernel, *, stride=None, padding=None):
+        self.out = None
+        self.x = x
+        self.kernel = kernel
+        self.stride = stride
+        self.padding = padding
+
+    def forward(self):
+        data = self.x.data.conv2d(self.kernel.data, stride=self.stride, padding=self.padding)
+        self.out = self.x.from_data(data)
+        return self.out
+
+    def backward(self):
+        pass

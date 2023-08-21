@@ -32,6 +32,7 @@ class OP(str, Enum):
     SIGMOID = 'sigmoid'
     SOFTMAX = 'softmax'
     MATMUL = 'matmul'
+    CONV2D = 'conv2d'
 
 
 class BACKEND(str, Enum):
