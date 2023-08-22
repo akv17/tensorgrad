@@ -178,7 +178,6 @@ class Matmul:
             self.b.grad += d_grad
 
 
-
 class Conv2D(Op):
     NAME = OP.CONV2D
 
@@ -191,10 +190,100 @@ class Conv2D(Op):
         self.padding = padding
 
     def forward(self):
-        bias = self.bias.data if self.bias is not None else None
-        data = self.x.data.conv2d(self.kernel.data, bias=bias, stride=self.stride, padding=self.padding)
+        bias = self.bias.data.data if self.bias is not None else None
+        data = self._conv2d(
+            x=self.x.data.data,
+            kernel=self.kernel.data.data,
+            bias=bias,
+            stride=self.stride,
+            padding=self.padding
+        )
+        data = self.x.data._new(data)
         self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
-        pass
+        import numpy as np
+        
+        if self.x.requires_grad:
+            x = self.x.data.data
+            k = self.kernel.data.data
+            u = self.out.grad.data
+
+            k = np.transpose(k, [1, 0, 2, 3])
+            kh, kw = k.shape[-2:]
+            ph = kh - 1
+            pw = kw - 1
+            g = self._conv2d(u, k, padding=(ph, pw), stride=(1, 1))
+            g = np.rot90(g, k=2, axes=(2, 3))
+            
+            g = self.x.data._new(g)
+            self.x.grad += g
+        
+        if self.kernel.requires_grad:
+            kh, kw = self.kernel.shape[-2:]
+            ci = self.x.shape[1]
+            co = self.kernel.shape[0]
+            
+            x = self.x.data.data
+            x = np.transpose(x, [0, 2, 3, 1])
+            w = np.lib.stride_tricks.sliding_window_view(x, (kh, kw), axis=[1, 2])
+            w = np.transpose(w, [0, 1, 2, 4, 5, 3])
+
+            u = self.out.grad.data
+            u = np.transpose(u, [0, 2, 3, 1])
+
+            w = w.reshape(-1, kh * kw, ci)
+            u = u.reshape(-1, co)
+
+            w = np.transpose(w, [1, 2, 0])
+            u = np.expand_dims(u, 0)
+
+            g = np.matmul(w, u)
+
+            g = g.reshape(kh, kw, ci, co)
+            g = np.transpose(g, [3, 2, 0, 1])
+
+            g = self.kernel.data._new(g)
+            self.kernel.grad += g
+        
+        if self.bias is not None and self.bias.requires_grad:
+            g = self.out.grad
+            g = g.permute([0, 2, 3, 1])
+            g = accumulate_broadcasted_grad(self.bias.data, g)
+            self.bias.grad += g
+
+    def _conv2d(self, x, kernel, bias=None, stride=None, padding=None):
+        import numpy as np
+
+        x = x.data
+        k = kernel
+
+        if padding is not None and padding != (0, 0):
+            hp, wp = padding
+            x = np.pad(x, [(0, 0), (0, 0), (hp, hp), (wp, wp)], mode='constant', constant_values=0.0)
+
+        kh, kw = k.shape[-2:]
+        x = np.transpose(x, [0, 2, 3, 1])
+        k = np.transpose(k, [2, 3, 1, 0])
+        w = np.lib.stride_tricks.sliding_window_view(x, (kh, kw), axis=[1, 2])
+        w = np.transpose(w, [0, 1, 2, 4, 5, 3])
+
+        bs, oh, ow, ci, kh, kw = w.shape
+        co = k.shape[-1]
+        w = w.reshape(bs * oh * ow, ci * kh * kw)
+        k = k.reshape(kh * kw * ci, co)
+        o = np.matmul(w, k)
+        o = o.reshape(bs, oh, ow, co)
+
+        if bias is not None:
+            o += bias
+
+        o = np.transpose(o, [0, 3, 1, 2])
+
+        if stride is not None:
+            sh, sw = stride
+            o = o[..., range(0, o.shape[2], sh), :]
+            o = o[..., :, range(0, o.shape[3], sw)]
+        
+        return o
