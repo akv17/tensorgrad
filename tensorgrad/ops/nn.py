@@ -194,139 +194,172 @@ class Conv2D(Op):
             self.padding = None
 
     def forward(self):
-        bias = self.bias.data.data if self.bias is not None else None
-        data = self._conv2d(
-            x=self.x.data.data,
-            kernel=self.kernel.data.data,
-            bias=bias,
-            stride=self.stride,
-            padding=self.padding
-        )
+        data = self._forward()
         data = self.x.data._new(data)
         self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
-        import numpy as np
-        
         if self.x.requires_grad:
-            x = self.x.data.data
-            k = self.kernel.data.data
-            u = self.out.grad.data
-
-            if self.padding is not None and self.padding != (0, 0):
-                ph, pw = self.padding
-                x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
-
-            # if self.padding is not None and self.padding != (0, 0):
-            #     ph, pw = self.padding
-            #     u = u[..., ph:-ph, pw:-pw]
-
-            # if self.stride is not None and self.stride != (1, 1):
-            #     sh, sw = self.stride
-            #     oh = x.shape[2] - k.shape[2] + 1
-            #     ow = x.shape[3] - k.shape[3] + 1
-            #     dh = oh - u.shape[2]
-            #     dw = ow - u.shape[3]
-            #     u = np.pad(u, [(0, 0), (0, 0), (dh, 0), (dw, 0)])
-
-            k = np.transpose(k, [1, 0, 2, 3])
-            kh, kw = k.shape[-2:]
-            ph = kh - 1
-            pw = kw - 1
-            g = self._conv2d(u, k, padding=(ph, pw), stride=(1, 1))
-            g = np.rot90(g, k=2, axes=(2, 3))
-
-            if self.padding is not None and self.padding != (0, 0):
-                ph, pw = self.padding
-                g = g[..., ph:-ph, pw:-pw]
-            
-            # if self.padding is not None and self.padding != (0, 0):
-            #     ph, pw = self.padding
-            #     x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
-
-            if self.stride is not None and self.stride != (1, 1):
-                sh, sw = self.stride
-                dh = x.shape[2] - g.shape[2]
-                dw = x.shape[3] - g.shape[3]
-                g = np.pad(g, [(0, 0), (0, 0), (0, dh), (0, dw)])
-
-            g = self.x.data._new(g)
+            g = self._backward_x()
+            g = self.x.grad._new(g)
             self.x.grad += g
         
         if self.kernel.requires_grad:
-            x = self.x.data.data
-            kh, kw = self.kernel.shape[-2:]
-            ci = self.x.shape[1]
-            co = self.kernel.shape[0]
-            
-            if self.padding is not None:
-                ph, pw = self.padding
-                x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
-            
-            x = np.transpose(x, [0, 2, 3, 1])
-            w = np.lib.stride_tricks.sliding_window_view(x, (kh, kw), axis=[1, 2])
-            w = np.transpose(w, [0, 1, 2, 4, 5, 3])
-            
-            if self.stride is not None:
-                sh, sw = self.stride
-                w = w[:, range(0, w.shape[1], sh), ...]
-                w = w[:, :, range(0, w.shape[2], sw), ...]
-
-            u = self.out.grad.data
-            u = np.transpose(u, [0, 2, 3, 1])
-
-            w = w.reshape(-1, kh * kw, ci)
-            u = u.reshape(-1, co)
-
-            w = np.transpose(w, [1, 2, 0])
-            u = np.expand_dims(u, 0)
-
-            g = np.matmul(w, u)
-
-            g = g.reshape(kh, kw, ci, co)
-            g = np.transpose(g, [3, 2, 0, 1])
-
-            g = self.kernel.data._new(g)
+            g = self._backward_k()
+            g = self.kernel.grad._new(g)
             self.kernel.grad += g
         
         if self.bias is not None and self.bias.requires_grad:
-            g = self.out.grad
-            g = g.permute([0, 2, 3, 1])
-            g = accumulate_broadcasted_grad(self.bias.data, g)
+            g = self._backward_b()
+            g = self.bias.grad._new(g)
             self.bias.grad += g
 
-    def _conv2d(self, x, kernel, bias=None, stride=None, padding=None):
+    def _forward(self):
         import numpy as np
 
-        x = x.data
-        k = kernel
-
-        if padding is not None and padding != (0, 0):
-            hp, wp = padding
-            x = np.pad(x, [(0, 0), (0, 0), (hp, hp), (wp, wp)])
-
+        x = self.x.data.data
+        k = self.kernel.data.data
+        co = k.shape[0]
+        ci = k.shape[1]
         kh, kw = k.shape[-2:]
+        b = np.zeros((co,), dtype=k.dtype) if self.bias is None else self.bias.data.data
+        
+        if self.padding is not None:
+            ph, pw = self.padding
+            x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
+
+        bs = x.shape[0]
+        ih, iw = x.shape[-2:]
+        stride = self.stride or (1, 1)
+        sh, sw = stride
+        import math
+        oh = math.floor((ih - kh) / sh + 1)
+        ow = math.floor((iw - kw) / sw + 1)
+        
         x = np.transpose(x, [0, 2, 3, 1])
         k = np.transpose(k, [2, 3, 1, 0])
-        w = np.lib.stride_tricks.sliding_window_view(x, (kh, kw), axis=[1, 2])
-        w = np.transpose(w, [0, 1, 2, 4, 5, 3])
-
-        bs, oh, ow, ci, kh, kw = w.shape
-        co = k.shape[-1]
-        w = w.reshape(bs * oh * ow, ci * kh * kw)
-        k = k.reshape(kh * kw * ci, co)
-        o = np.matmul(w, k)
-        o = o.reshape(bs, oh, ow, co)
-
-        if bias is not None:
-            o += bias
-
-        o = np.transpose(o, [0, 3, 1, 2])
-
-        if stride is not None:
-            sh, sw = stride
-            o = o[..., range(0, o.shape[2], sh), :]
-            o = o[..., :, range(0, o.shape[3], sw)]
+        o = np.zeros((bs, oh, ow, co))
+        for n in range(bs):
+            for oi in range(oh):
+                for oj in range(ow):
+                    for ki in range(kh):
+                        for kj in range(kw):
+                            ii = (oi * sh) + ki
+                            ij = (oj * sw) + kj
+                            for m in range(co):
+                                for p in range(ci):
+                                    xp = x[n, ii, ij, p]
+                                    kp = k[ki, kj, p, m]
+                                    zi = xp * kp
+                                    o[n, oi, oj, m] += zi
+                                o[n, oi, oj, m] += b[m] / (kh * kw)
         
+        o = np.transpose(o, [0, 3, 1, 2])
         return o
+
+    def _backward_x(self):
+        import numpy as np
+
+        x = self.x.data.data
+        k = self.kernel.data.data
+        u = self.out.grad.data
+
+        if self.padding is not None:
+            ph, pw = self.padding
+            x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
+
+        g = np.zeros(x.shape, dtype=x.dtype)
+
+        bs = x.shape[0]
+        ih, iw = x.shape[-2:]
+        kh, kw = k.shape[-2:]
+        ci = k.shape[1]
+        co = k.shape[0]
+
+        import math
+        stride = self.stride or (1, 1)
+        sh, sw = stride
+        oh = math.floor((ih - kh) / sh + 1)
+        ow = math.floor((iw - kw) / sw + 1)
+
+        x = np.transpose(x, [0, 2, 3, 1])
+        g = np.transpose(g, [0, 2, 3, 1])
+        k = np.transpose(k, [2, 3, 1, 0])
+        u = np.transpose(u, [0, 2, 3, 1])
+
+        for n in range(bs):
+            for oi in range(oh):
+                for oj in range(ow):
+                    for ki in range(kh):
+                        for kj in range(kw):
+                            ii = (oi * sh) + ki
+                            ij = (oj * sw) + kj
+                            for m in range(co):
+                                for p in range(ci):
+                                    ui = u[n, oi, oj, m]
+                                    zi = k[ki, kj, p, m]
+                                    gi = zi * ui
+                                    g[n, ii, ij, p] += gi
+        
+        if self.padding is not None:
+            ph, pw = self.padding
+            g = g[:, ph:-ph, pw:-pw, :]
+        
+        g = np.transpose(g, [0, 3, 1, 2])
+        return g
+
+    def _backward_k(self):
+        import numpy as np
+
+        x = self.x.data.data
+        k = self.kernel.data.data
+        u = self.out.grad.data
+
+        if self.padding is not None:
+            ph, pw = self.padding
+            x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
+
+        g = np.zeros(k.shape, dtype=k.dtype)
+
+        bs = x.shape[0]
+        ih, iw = x.shape[-2:]
+        kh, kw = k.shape[-2:]
+        ci = k.shape[1]
+        co = k.shape[0]
+
+        import math
+        stride = self.stride or (1, 1)
+        sh, sw = stride
+        oh = math.floor((ih - kh) / sh + 1)
+        ow = math.floor((iw - kw) / sw + 1)
+
+        x = np.transpose(x, [0, 2, 3, 1])
+        k = np.transpose(k, [2, 3, 1, 0])
+        g = np.transpose(g, [2, 3, 1, 0])
+        u = np.transpose(u, [0, 2, 3, 1])
+
+        for n in range(bs):
+            for oi in range(oh):
+                for oj in range(ow):
+                    for ki in range(kh):
+                        for kj in range(kw):
+                            ii = (oi * sh) + ki
+                            ij = (oj * sw) + kj
+                            for m in range(co):
+                                for p in range(ci):
+                                    ui = u[n, oi, oj, m]
+                                    xi = x[n, ii, ij, p]
+                                    gi = xi * ui
+                                    g[ki, kj, p, m] += gi
+        
+        g = np.transpose(g, [3, 2, 0, 1])
+        return g
+
+    def _backward_b(self):
+        import numpy as np
+        u = self.out.grad.data
+        u = np.transpose(u, [0, 2, 3, 1])
+        u = u.reshape(-1, u.shape[-1])
+        g = u.sum(0)
+        return g

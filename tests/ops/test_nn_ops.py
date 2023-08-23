@@ -185,14 +185,14 @@ class TestNNOps(unittest.TestCase):
 
     @parameterized.expand(
         generate_cases(
-            [7],
+            [1],
             [6],
             [5],
-            [(4, 4)],
-            [(3, 3)],
-            [False],
-            [(1, 1)],
-            [(0, 0)],
+            [(28, 28)],
+            [(1, 1), (3, 3)],
+            [False, True],
+            [(1, 1), (2, 2)],
+            [(0, 0), (1, 1)],
             BACKENDS_TESTED,
             DTYPES_TESTED,
         )
@@ -206,23 +206,23 @@ class TestNNOps(unittest.TestCase):
         tx = torch.rand(input_shape, dtype=tdtype, requires_grad=True)
         tk = torch.rand(kernel_shape, dtype=tdtype, requires_grad=True)
         tb = torch.rand((out_channels,), dtype=tdtype, requires_grad=True) if bias else None
-        to = torch.nn.functional.conv2d(tx, tk, tb, stride=stride, padding=padding).log().sum()
+        to = torch.nn.functional.conv2d(tx, tk, tb, stride=stride, padding=padding).exp().sum()
         to.backward()
 
         x = Tensor(tx.tolist(), name='x', backend=backend, dtype=dtype, requires_grad=True)
         k = Tensor(tk.tolist(), name='k', backend=backend, dtype=dtype, requires_grad=True)
-        b = Tensor(tb.tolist(), name='b', backend=backend, dtype=dtype, requires_grad=False) if bias else None
-        o = x.conv2d(k, bias=b, stride=stride, padding=padding).log().sum()
+        b = Tensor(tb.tolist(), name='b', backend=backend, dtype=dtype, requires_grad=True) if bias else None
+        o = x.conv2d(k, bias=b, stride=stride, padding=padding).exp().sum()
         o.backward()
 
         self._check_tensors(to, o, msg=f'{name}@forward')
-        # self._check_tensors(tk.grad, k.grad, msg=f'{name}@k_grad')
-        # self._check_tensors(tx.grad, x.grad, msg=f'{name}@x_grad')
-        # if bias:
-        #     self._check_tensors(tb.grad, b.grad, msg=f'{name}@b_grad')
+        self._check_tensors(tk.grad, k.grad, msg=f'{name}@k_grad')
+        self._check_tensors(tx.grad, x.grad, msg=f'{name}@x_grad')
+        if bias:
+            self._check_tensors(tb.grad, b.grad, msg=f'{name}@b_grad')
 
     def _check_tensors(self, a, b, tol=1e-5, msg=''):
-        self.assertTrue(check_tensors(a, b, tol=tol, show_diff=True), msg=msg)
+        self.assertTrue(check_tensors(a, b, tol=tol, show_diff=False), msg=msg)
 
     def _op_to_method(self, op):
         return {
