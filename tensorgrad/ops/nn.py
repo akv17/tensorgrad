@@ -188,6 +188,10 @@ class Conv2D(Op):
         self.bias = bias
         self.stride = stride
         self.padding = padding
+        if self.stride == (1, 1):
+            self.stride = None
+        if self.padding == (0, 0):
+            self.padding = None
 
     def forward(self):
         bias = self.bias.data.data if self.bias is not None else None
@@ -210,25 +214,64 @@ class Conv2D(Op):
             k = self.kernel.data.data
             u = self.out.grad.data
 
+            if self.padding is not None and self.padding != (0, 0):
+                ph, pw = self.padding
+                x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
+
+            # if self.padding is not None and self.padding != (0, 0):
+            #     ph, pw = self.padding
+            #     u = u[..., ph:-ph, pw:-pw]
+
+            # if self.stride is not None and self.stride != (1, 1):
+            #     sh, sw = self.stride
+            #     oh = x.shape[2] - k.shape[2] + 1
+            #     ow = x.shape[3] - k.shape[3] + 1
+            #     dh = oh - u.shape[2]
+            #     dw = ow - u.shape[3]
+            #     u = np.pad(u, [(0, 0), (0, 0), (dh, 0), (dw, 0)])
+
             k = np.transpose(k, [1, 0, 2, 3])
             kh, kw = k.shape[-2:]
             ph = kh - 1
             pw = kw - 1
             g = self._conv2d(u, k, padding=(ph, pw), stride=(1, 1))
             g = np.rot90(g, k=2, axes=(2, 3))
+
+            if self.padding is not None and self.padding != (0, 0):
+                ph, pw = self.padding
+                g = g[..., ph:-ph, pw:-pw]
             
+            # if self.padding is not None and self.padding != (0, 0):
+            #     ph, pw = self.padding
+            #     x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
+
+            if self.stride is not None and self.stride != (1, 1):
+                sh, sw = self.stride
+                dh = x.shape[2] - g.shape[2]
+                dw = x.shape[3] - g.shape[3]
+                g = np.pad(g, [(0, 0), (0, 0), (0, dh), (0, dw)])
+
             g = self.x.data._new(g)
             self.x.grad += g
         
         if self.kernel.requires_grad:
+            x = self.x.data.data
             kh, kw = self.kernel.shape[-2:]
             ci = self.x.shape[1]
             co = self.kernel.shape[0]
             
-            x = self.x.data.data
+            if self.padding is not None:
+                ph, pw = self.padding
+                x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)])
+            
             x = np.transpose(x, [0, 2, 3, 1])
             w = np.lib.stride_tricks.sliding_window_view(x, (kh, kw), axis=[1, 2])
             w = np.transpose(w, [0, 1, 2, 4, 5, 3])
+            
+            if self.stride is not None:
+                sh, sw = self.stride
+                w = w[:, range(0, w.shape[1], sh), ...]
+                w = w[:, :, range(0, w.shape[2], sw), ...]
 
             u = self.out.grad.data
             u = np.transpose(u, [0, 2, 3, 1])
@@ -261,7 +304,7 @@ class Conv2D(Op):
 
         if padding is not None and padding != (0, 0):
             hp, wp = padding
-            x = np.pad(x, [(0, 0), (0, 0), (hp, hp), (wp, wp)], mode='constant', constant_values=0.0)
+            x = np.pad(x, [(0, 0), (0, 0), (hp, hp), (wp, wp)])
 
         kh, kw = k.shape[-2:]
         x = np.transpose(x, [0, 2, 3, 1])

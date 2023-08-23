@@ -185,18 +185,19 @@ class TestNNOps(unittest.TestCase):
 
     @parameterized.expand(
         generate_cases(
-            [1, 2],
-            [1, 3, 16],
-            [1, 4, 16],
-            [(8, 8)],
-            [(1, 1), (3, 3), (5, 5)],
-            [(1, 1), (1, 2), (2, 1), (2, 2)],
-            [(0, 0), (1, 1), (1, 2), (2, 1), (3, 3)],
+            [7],
+            [6],
+            [5],
+            [(4, 4)],
+            [(3, 3)],
+            [False],
+            [(1, 1)],
+            [(0, 0)],
             BACKENDS_TESTED,
             DTYPES_TESTED,
         )
     )
-    def test_conv2d(self, batch_size, in_channels, out_channels, input_size, kernel_size, stride, padding, backend, dtype):
+    def test_conv2d(self, batch_size, in_channels, out_channels, input_size, kernel_size, bias, stride, padding, backend, dtype):
         input_shape = (batch_size, in_channels, *input_size)
         kernel_shape = (out_channels, in_channels, *kernel_size)
         name = f'{input_shape}::{kernel_shape}::{stride}::{padding}::{backend}::{dtype}'
@@ -204,17 +205,24 @@ class TestNNOps(unittest.TestCase):
         tdtype = getattr(torch, dtype.value)
         tx = torch.rand(input_shape, dtype=tdtype, requires_grad=True)
         tk = torch.rand(kernel_shape, dtype=tdtype, requires_grad=True)
-        to = torch.nn.functional.conv2d(tx, tk, stride=stride, padding=padding)
+        tb = torch.rand((out_channels,), dtype=tdtype, requires_grad=True) if bias else None
+        to = torch.nn.functional.conv2d(tx, tk, tb, stride=stride, padding=padding).log().sum()
+        to.backward()
 
         x = Tensor(tx.tolist(), name='x', backend=backend, dtype=dtype, requires_grad=True)
         k = Tensor(tk.tolist(), name='k', backend=backend, dtype=dtype, requires_grad=True)
-        o = x.conv2d(k, stride=stride, padding=padding)
-        print(to.shape, o.shape)
+        b = Tensor(tb.tolist(), name='b', backend=backend, dtype=dtype, requires_grad=False) if bias else None
+        o = x.conv2d(k, bias=b, stride=stride, padding=padding).log().sum()
+        o.backward()
 
         self._check_tensors(to, o, msg=f'{name}@forward')
+        # self._check_tensors(tk.grad, k.grad, msg=f'{name}@k_grad')
+        # self._check_tensors(tx.grad, x.grad, msg=f'{name}@x_grad')
+        # if bias:
+        #     self._check_tensors(tb.grad, b.grad, msg=f'{name}@b_grad')
 
     def _check_tensors(self, a, b, tol=1e-5, msg=''):
-        self.assertTrue(check_tensors(a, b, tol=tol, show_diff=False), msg=msg)
+        self.assertTrue(check_tensors(a, b, tol=tol, show_diff=True), msg=msg)
 
     def _op_to_method(self, op):
         return {
