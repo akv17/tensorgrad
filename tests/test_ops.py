@@ -15,12 +15,15 @@ DTYPE = get_dtype()
 class TestOps(unittest.TestCase):
 
     @parameterized.expand([
-        (2,)
+        [(128,)],
+        [(32, 128)],
+        [(8, 16, 32)],
+
     ])
     def test_add(self, shape):
         self._test_binary_op(shape=shape, method='__add__')
 
-    def _test_binary_op(self, shape, method):        
+    def _test_binary_op(self, shape, method):
         _a = np.random.normal(size=shape)
         _b = np.random.normal(size=shape)
         
@@ -42,10 +45,14 @@ class TestOps(unittest.TestCase):
 
     def _backward_tensorgrad(self, tensor):
         r = tensor.arange(tensor.numel()).reshape(tensor.shape) + 1.0
+        norm = r.data.max().tolist()
+        r = r / norm
         o = (tensor * r).sum()
         o.backward()
     
     def _backward_torch(self, tensor):
         r = torch.arange(tensor.numel()).reshape(tensor.shape) + 1.0
+        norm = r.data.max().tolist()
+        r = r / norm
         o = (tensor * r).sum()
         o.backward()
