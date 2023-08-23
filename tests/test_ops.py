@@ -195,6 +195,46 @@ class TestOps(unittest.TestCase):
     def test_select(self, shape, slice_):
         self.helper._test_unary_op(shape=shape, method='__getitem__', args=(slice_,))
 
+    @parameterized.expand([
+        [(128,), None],
+        [(32, 64), None],
+        [(32, 64), 0],
+        [(32, 64), 1],
+        [(32, 64), -1],
+        [(32, 64), -2],
+        [(8, 16, 32), None],
+        [(8, 16, 32), 0],
+        [(8, 16, 32), 1],
+        [(8, 16, 32), 2],
+        [(4, 8, 16, 32), None],
+        [(4, 8, 16, 32), 0],
+        [(4, 8, 16, 32), 1],
+        [(4, 8, 16, 32), 2],
+        [(4, 8, 16, 32), 3],
+    ])
+    def test_sum_reduce(self, shape, dim):
+        self.helper._test_unary_op(shape=shape, method='sum', args=(dim,))
+    
+    @parameterized.expand([
+        [(128,), None],
+        [(32, 64), None],
+        [(32, 64), 0],
+        [(32, 64), 1],
+        [(32, 64), -1],
+        [(32, 64), -2],
+        [(8, 16, 32), None],
+        [(8, 16, 32), 0],
+        [(8, 16, 32), 1],
+        [(8, 16, 32), 2],
+        [(4, 8, 16, 32), None],
+        [(4, 8, 16, 32), 0],
+        [(4, 8, 16, 32), 1],
+        [(4, 8, 16, 32), 2],
+        [(4, 8, 16, 32), 3],
+    ])
+    def test_mean_reduce(self, shape, dim):
+        self.helper._test_unary_op(shape=shape, method='mean', args=(dim,))
+
 
 class Helper(unittest.TestCase):
 

@@ -21,6 +21,27 @@ class SumReduce(ReduceOp):
             elif self.dim == 0 and self.x.ndim < 2:
                 out_grad = self.out.grad
             else:
-                # out_grad = self.out.grad.unsqueeze(self.dim)
                 out_grad = np.expand_dims(self.out.grad, self.dim)
             self.x.grad += out_grad
+
+
+@OpDispatch.register(OP.MEAN_REDUCE, DEVICE.CPU)
+class MeanReduce(ReduceOp):
+
+    def forward(self):
+        data = self.x.data.mean(self.dim)
+        self.out = self.x.from_data(data)
+        return self.out
+
+    def backward(self):
+        if self.x.requires_grad:
+            np = get_numpy()
+            size = self.x.numel() if self.dim is None else self.x.shape[self.dim]
+            if self.dim is None:
+                out_grad = self.out.grad
+            elif self.dim == 0 and self.x.ndim < 2:
+                out_grad = self.out.grad
+            else:
+                out_grad = np.expand_dims(self.out.grad, self.dim)
+            self.x.grad += 1.0 / size * out_grad
+    
