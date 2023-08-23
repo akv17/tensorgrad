@@ -2,7 +2,6 @@ from ..const import DTYPE, DEVICE
 
 
 class CPUStorage:
-    DEVICE = DEVICE.CPU
     _NUMPY = None
 
     @classmethod
@@ -42,7 +41,7 @@ class CPUStorage:
 
     @classmethod
     def get_device(cls, data):
-        return cls.DEVICE
+        return DEVICE.CPU
     
     @classmethod
     def get_dtype(cls, data):

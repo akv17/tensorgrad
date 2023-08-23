@@ -84,9 +84,6 @@ class Softmax(BaseOp):
 
         # step: 5.8
         jacob_ii = softmax_t * (1.0 - softmax_t)
-        # jacob = jacob.fill_diagonal2d(jacob_ii)
-        # dim_last = out.shape[-1]
-        # dim_prelast = out.shape[-2]
         jacob[..., range(jacob.shape[-2]), range(jacob.shape[-1])] = jacob_ii
 
         # step: 7
