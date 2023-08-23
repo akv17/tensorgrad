@@ -84,19 +84,132 @@ class TestOps(unittest.TestCase):
     def test_exp(self, shape):
         self.helper._test_unary_op(shape=shape, method='exp', args=())
 
+    @parameterized.expand([
+        [(1, 128), 0],
+        [(128, 1), 1],
+        [(1, 128), -2],
+        [(128, 1), -1],
+        [(1, 16, 32), 0],
+        [(8, 1, 32),  1],
+        [(8, 16, 1),  2],
+        [(1, 128), 0],
+        [(128, 1), 1],
+        [(1, 8, 16, 32), 0],
+        [(4, 1, 16, 32), 1],
+        [(4, 8, 1, 32),  2],
+        [(4, 8, 16, 1),  3],
+    ])
+    def test_squeeze(self, shape, dim):
+        self.helper._test_unary_op(shape=shape, method='squeeze', args=(dim,))
+    
+    @parameterized.expand([
+        [(128,), 0],
+        [(128,), 1],
+        [(128,), -1],
+        [(32, 64), 0],
+        [(32, 64), 1],
+        [(32, 64), 2],
+        [(32, 64), -1],
+        [(8, 16, 32), 0],
+        [(8, 16, 32), 1],
+        [(8, 16, 32), 2],
+        [(8, 16, 32), 3],
+        [(8, 16, 32), -1],
+        [(4, 8, 16, 32), 0],
+        [(4, 8, 16, 32), 1],
+        [(4, 8, 16, 32), 2],
+        [(4, 8, 16, 32), 3],
+        [(4, 8, 16, 32), 4],
+        [(4, 8, 16, 32), -1],
+    ])
+    def test_unsqueeze(self, shape, dim):
+        self.helper._test_unary_op(shape=shape, method='unsqueeze', args=(dim,))
+
+    @parameterized.expand([
+        [(6,), (2, 3)],
+        [(3, 1), (1, 3)],
+        [(3, 4), (2, 6)],
+        [(2, 3, 4), (2, 12)],
+        [(2, 12), (2, 3, 4)],
+        [(2, 3, 4, 5), (6, 4, 5)],
+        [(2, 3, 4, 5), (-1, 5)],
+        [(2, 3, 4, 5), (24, -1)],
+        [(2, 3, 4, 5), (-1,)],
+    ])
+    def test_reshape(self, shape_a, shape_b):
+        self.helper._test_unary_op(shape=shape_a, method='reshape', args=(shape_b,))
+
+    @parameterized.expand([
+        [(4, 1), (0, 1)],
+        [(1, 4), (1, 0)],
+        [(2, 3), (0, 1)],
+        [(2, 3), (1, 0)],
+        [(2, 3, 4), (0, 1, 2)],
+        [(2, 3, 4), (1, 0, 2)],
+        [(2, 3, 4), (1, 2, 0)],
+        [(2, 3, 4), (0, 2, 1)],
+        [(2, 3, 4), (2, 0, 1)],
+        [(2, 3, 4), (2, 1, 0)],
+        [(2, 3, 4, 5), (0, 1, 2, 3)],
+        [(2, 3, 4, 5), (1, 0, 2, 3)],
+        [(2, 3, 4, 5), (0, 2, 1, 3)],
+        [(2, 3, 4, 5), (1, 2, 0, 3)],
+        [(2, 3, 4, 5), (2, 0, 1, 3)],
+        [(2, 3, 4, 5), (2, 1, 0, 3)],
+        [(2, 3, 4, 5), (0, 1, 3, 2)],
+        [(2, 3, 4, 5), (1, 0, 3, 2)],
+        [(2, 3, 4, 5), (0, 2, 3, 1)],
+        [(2, 3, 4, 5), (1, 2, 3, 0)],
+        [(2, 3, 4, 5), (2, 0, 3, 1)],
+        [(2, 3, 4, 5), (2, 1, 3, 0)],
+        [(2, 3, 4, 5), (0, 3, 1, 2)],
+        [(2, 3, 4, 5), (1, 3, 0, 2)],
+        [(2, 3, 4, 5), (0, 3, 2, 1)],
+        [(2, 3, 4, 5), (1, 3, 2, 0)],
+        [(2, 3, 4, 5), (2, 3, 0, 1)],
+        [(2, 3, 4, 5), (2, 3, 1, 0)],
+        [(2, 3, 4, 5), (3, 0, 1, 2)],
+        [(2, 3, 4, 5), (3, 1, 0, 2)],
+        [(2, 3, 4, 5), (3, 0, 2, 1)],
+        [(2, 3, 4, 5), (3, 1, 2, 0)],
+        [(2, 3, 4, 5), (3, 2, 0, 1)],
+        [(2, 3, 4, 5), (3, 2, 1, 0)],
+    ])
+    def test_permute(self, shape, dims):
+        self.helper._test_unary_op(shape=shape, method='permute', args=(dims,))
+
+    @parameterized.expand([
+        [(3, 4), 0],
+        [(3, 4), (slice(None), 0)],
+        [(3, 4), (0, slice(None))],
+        [(4, 5), (slice(1, 3), slice(None))],
+        [(4, 5), (slice(None), slice(2, 4))],
+        [(4, 5), (1, slice(2, 4))],
+        [(4, 5), (slice(1, 3), 4)],
+        [(4, 5), (1, 4)],
+        [(2, 3, 4), 0],
+        [(2, 3, 4), (slice(None), slice(1, 2))],
+        [(2, 3, 4), (0, slice(1, 2), -1)],
+        [(2, 3, 4), (slice(0, 1), slice(1, 2), slice(2, 3))],
+    ])
+    def test_select(self, shape, slice_):
+        self.helper._test_unary_op(shape=shape, method='__getitem__', args=(slice_,))
+
 
 class Helper(unittest.TestCase):
 
-    def _test_unary_op(self, shape, method, args, x=None):
+    def _test_unary_op(self, shape, method, x=None, args=None, kwargs=None):
+        args = args or ()
+        kwargs = kwargs or {}
         _x = x if x is not None else np.random.normal(0.0, 1.0, size=shape)
         
         x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
-        o = getattr(x, method)(*args)
+        o = getattr(x, method)(*args, **kwargs)
         self._backward_tensorgrad(o)
 
         tdtype = getattr(torch, x.dtype.value)
         tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
-        to = getattr(tx, method)(*args)
+        to = getattr(tx, method)(*args, **kwargs)
         self._backward_torch(to)
 
         name = f'{shape}::{method}::{args}'
