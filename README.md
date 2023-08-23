@@ -11,7 +11,7 @@ TODO:
 - [x] adam
 
 - [] maxreduce
-- [] conv2d
+- [x] conv2d
 - [] batchnorm2d
 - [] maxpool2d
 
@@ -24,3 +24,4 @@ PROBLEMS:
 - universal data transfer via .numpy()
 - controlling requires_grad for nn.modules
 - Parameter type
+- clean up tests
