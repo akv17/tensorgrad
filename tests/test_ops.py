@@ -234,6 +234,24 @@ class TestOps(unittest.TestCase):
     ])
     def test_mean_reduce(self, shape, dim):
         self.helper._test_unary_op(shape=shape, method='mean', args=(dim,))
+    
+    @parameterized.expand([
+        [(128,)],
+        [(32, 64)],
+        [(8, 16, 32)],
+        [(4, 8, 16, 32)],
+    ])
+    def test_relu(self, shape):
+        self.helper._test_unary_op(shape=shape, method='relu')
+    
+    @parameterized.expand([
+        [(128,)],
+        [(32, 64)],
+        [(8, 16, 32)],
+        [(4, 8, 16, 32)],
+    ])
+    def test_sigmoid(self, shape):
+        self.helper._test_unary_op(shape=shape, method='sigmoid')
 
 
 class Helper(unittest.TestCase):
