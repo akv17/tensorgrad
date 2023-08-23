@@ -1,8 +1,9 @@
 from uuid import uuid4
 
-from .const import DTYPE, OP, BACKEND
-from .backend import BackendDispatch
-from .ops import OpDispatch
+from .const import DTYPE, OP, DEVICE
+from .storage import StorageDispatch
+
+OpDispatch = None
 
 
 class Tensor:
@@ -11,22 +12,27 @@ class Tensor:
         self,
         data,
         dtype=None,
-        backend=None,
+        device=None,
         name=None,
         requires_grad=True,
     ):
-        self.backend = backend
-        self._backend = BackendDispatch.get(self.backend)
-        
-        self.dtype = dtype
         self.name = name or f'tensor@{str(uuid4())[:8]}'
         self.requires_grad = requires_grad
         
-        self.data = self._backend.tensor(data, dtype=self.dtype)
-        self.grad = self._backend.zeros(self.data.shape, dtype=self.dtype)
+        self._storage = StorageDispatch.get(device)
+        self.data = self._storage.tensor(data, dtype=dtype)
+        self.grad = self._storage.zeros(self.data.shape, dtype=dtype)
         
         self._children = ()
         self._op = None
+
+    @property
+    def dtype(self):
+        return self._storage.imap_dtype(self.data.dtype)
+
+    @property
+    def device(self):
+        return self._storage.DEVICE
 
     @property
     def shape(self):
@@ -41,7 +47,7 @@ class Tensor:
         return self._op.backward if self._op is not None else lambda: None
     
     def __repr__(self):
-        return f'Tensor(name={self.name}, shape={self.shape}, dtype={self.dtype}, backend={self.backend})'
+        return f'Tensor(shape={self.shape}, dtype={self.dtype}, device={self.device}, name={self.name})'
 
     def __getitem__(self, slice_):
         out = OpDispatch.execute(OP.SELECT, self, slice_=slice_)

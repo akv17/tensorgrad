@@ -9,6 +9,10 @@ class DTYPE(str, Enum):
     BOOL = 'bool'
 
 
+class DEVICE(str, Enum):
+    CPU = 'cpu'
+
+
 class OP(str, Enum):
     ADD = 'add'
     SUB = 'sub'
@@ -33,7 +37,3 @@ class OP(str, Enum):
     SOFTMAX = 'softmax'
     MATMUL = 'matmul'
     CONV2D = 'conv2d'
-
-
-class BACKEND(str, Enum):
-    NUMPY = 'numpy'
