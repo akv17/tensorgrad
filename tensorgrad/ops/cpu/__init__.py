@@ -4,3 +4,4 @@ from .reduce import *
 from .shape import *
 from .activation import *
 from .matmul import *
+from .softmax import *

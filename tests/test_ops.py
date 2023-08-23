@@ -273,6 +273,23 @@ class TestOps(unittest.TestCase):
     def test_matmul(self, a_shape, b_shape):
         self.helper._test_binary_op(a_shape=a_shape, b_shape=b_shape, method='matmul', tol=1e-4)
 
+    @parameterized.expand([
+        [(128,), 0],
+        [(128,), -1],
+        [(32, 64), 0],
+        [(32, 64), 1],
+        [(32, 64), -1],
+        [(32, 64), -2],
+        [(8, 16, 32), 0],
+        [(8, 16, 32), 1],
+        [(8, 16, 32), 2],
+        [(4, 8, 16, 32), 0],
+        [(4, 8, 16, 32), 1],
+        [(4, 8, 16, 32), 2],
+        [(4, 8, 16, 32), 3],
+    ])
+    def test_softmax(self, shape, dim):
+        self.helper._test_unary_op(shape=shape, method='softmax', args=(dim,))
 
 class Helper(unittest.TestCase):
 
