@@ -1,4 +1,3 @@
-import os
 import itertools
 
 import numpy as np
@@ -30,12 +29,3 @@ def check_tensors(a, b, tol=1e-5, show_diff=False):
 def generate_cases(*args):
     cases = list(itertools.product(*args))
     return cases
-
-
-def get_device():
-    device = os.getenv('DEVICE', 'cpu')
-    return device
-
-
-def get_dtype():
-    return 'float32'
