@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from .const import DTYPE, OP, DEVICE
+from .const import OP
 from .storage import StorageDispatch
 from .ops import OpDispatch
 
@@ -27,19 +27,25 @@ class Tensor:
 
     @property
     def dtype(self):
-        return self._storage.imap_dtype(self.data.dtype)
+        return self._storage.get_dtype(self.data)
 
     @property
     def device(self):
-        return self._storage.DEVICE
+        return self._storage.get_device(self.data)
 
     @property
     def shape(self):
-        return self.data.shape
+        return self._storage.get_shape(self.data)
     
     @property
     def ndim(self):
         return len(self.shape)
+    
+    def numel(self):
+        n = 1
+        for s in self.shape:
+            n *= s
+        return n
 
     @property
     def _backward(self):
@@ -156,9 +162,9 @@ class Tensor:
 
     def backward(self, upstream=None):
         if upstream is not None:
-            upstream = self._backend.tensor(upstream, dtype=self.dtype)
+            upstream = self._storage.tensor(upstream, dtype=self.dtype)
         else:
-            upstream = self._backend.ones(self.shape, dtype=self.dtype)
+            upstream = self._storage.ones(self.shape, dtype=self.dtype)
         self.grad = upstream
         nodes = self._traverse()
         for node in reversed(nodes):
@@ -173,19 +179,23 @@ class Tensor:
         return ob
 
     def zeros_like(self):
-        data = self._backend.zeros(self.data.shape, dtype=self.dtype)
+        data = self._storage.zeros(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def zeros(self, shape):
-        data = self._backend.zeros(shape, dtype=self.dtype)
+        data = self._storage.zeros(shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def ones_like(self):
-        data = self._backend.ones(self.data.shape, dtype=self.dtype)
+        data = self._storage.ones(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def ones(self, shape):
-        data = self._backend.ones(shape, dtype=self.dtype)
+        data = self._storage.ones(shape, dtype=self.dtype)
+        return self._copy_from_data(data)
+    
+    def arange(self, n):
+        data = self._storage.arange(n, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def tolist(self):
@@ -210,7 +220,7 @@ class Tensor:
 
     def _wrap_constant_maybe(self, value):
         if isinstance(value, (float, int)):
-            value = self._backend.tensor(value, dtype=self.dtype)
+            value = self._storage.tensor(value, dtype=self.dtype)
             tensor = self._copy_from_data(value)
             tensor.requires_grad = False
             value = tensor

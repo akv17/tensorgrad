@@ -5,6 +5,9 @@ class OpDispatch:
     def execute(cls, op, *args, **kwargs):
         device = args[0].device
         key = (op, device)
+        if key not in cls._DISPATCH:
+            msg = f'unknown op: {key}'
+            raise KeyError(msg)
         op = cls._DISPATCH[key]
         op = op(*args, **kwargs)
         out = op.forward()

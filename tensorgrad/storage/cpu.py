@@ -8,21 +8,29 @@ class CPUStorage:
     @classmethod
     def tensor(cls, data, dtype=None):
         np = cls._get_numpy()
-        dtype = cls.map_dtype(dtype)
+        dtype = cls._map_dtype(dtype)
         data = np.array(data, dtype=dtype)
         return data
 
     @classmethod
     def zeros(cls, shape, dtype=None):
         np = cls._get_numpy()
-        dtype = cls.map_dtype(dtype)
+        dtype = cls._map_dtype(dtype)
         data = np.zeros(shape, dtype=dtype)
         return data
 
     @classmethod
     def ones(cls, shape, dtype=None):
         np = cls._get_numpy()
+        dtype = cls._map_dtype(dtype)
         data = np.ones(shape, dtype=dtype)
+        return data
+    
+    @classmethod
+    def arange(cls, n, dtype=None):
+        np = cls._get_numpy()
+        dtype = cls._map_dtype(dtype)
+        data = np.arange(n, dtype=dtype)
         return data
 
     @classmethod
@@ -33,7 +41,19 @@ class CPUStorage:
         return data
 
     @classmethod
-    def map_dtype(cls, dtype):
+    def get_device(cls, data):
+        return cls.DEVICE
+    
+    @classmethod
+    def get_dtype(cls, data):
+        return cls._imap_dtype(data.dtype)
+    
+    @classmethod
+    def get_shape(cls, data):
+        return data.shape
+
+    @classmethod
+    def _map_dtype(cls, dtype):
         np = cls._get_numpy()
         dtype = dtype or DTYPE.FLOAT32
         dispatch = {
@@ -46,7 +66,7 @@ class CPUStorage:
         return dispatch[dtype]
     
     @classmethod
-    def imap_dtype(cls, dtype):
+    def _imap_dtype(cls, dtype):
         dtype = str(dtype)
         dispatch = {
             'float32': DTYPE.FLOAT32,
