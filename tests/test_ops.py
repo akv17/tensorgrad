@@ -14,6 +14,9 @@ DTYPE = get_dtype()
 
 class TestOps(unittest.TestCase):
 
+    def setUp(self) -> None:
+        self.helper = Helper()
+
     @parameterized.expand([
         [(128,)],
         [(32, 128)],
@@ -21,7 +24,7 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_add(self, shape):
-        self._test_binary_op(shape=shape, method='__add__')
+        self.helper._test_binary_op(shape=shape, method='__add__')
     
     @parameterized.expand([
         [(128,)],
@@ -30,7 +33,7 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_sub(self, shape):
-        self._test_binary_op(shape=shape, method='__sub__')
+        self.helper._test_binary_op(shape=shape, method='__sub__')
     
     @parameterized.expand([
         [(128,)],
@@ -39,7 +42,7 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_mul(self, shape):
-        self._test_binary_op(shape=shape, method='__mul__')
+        self.helper._test_binary_op(shape=shape, method='__mul__')
     
     @parameterized.expand([
         [(128,)],
@@ -48,7 +51,7 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_div(self, shape):
-        self._test_binary_op(shape=shape, method='__truediv__')
+        self.helper._test_binary_op(shape=shape, method='__truediv__')
     
     @parameterized.expand([
         [(128,), 2.7],
@@ -59,7 +62,8 @@ class TestOps(unittest.TestCase):
         [(32, 128,), 0],
     ])
     def test_pow(self, shape, p):
-        self._test_unary_op(shape=shape, method='__pow__', args=(p,))
+        x = np.random.uniform(0.0, 1.0, size=shape)
+        self.helper._test_unary_op(shape=shape, method='__pow__', args=(p,), x=x)
     
     @parameterized.expand([
         [(128,)],
@@ -69,7 +73,7 @@ class TestOps(unittest.TestCase):
     ])
     def test_log(self, shape):
         x = np.random.uniform(0.0, 1.0, size=shape)
-        self._test_unary_op(shape=shape, method='log', args=(), x=x)
+        self.helper._test_unary_op(shape=shape, method='log', args=(), x=x)
     
     @parameterized.expand([
         [(128,)],
@@ -78,19 +82,10 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_exp(self, shape):
-        self._test_unary_op(shape=shape, method='exp', args=())
-    
-    @parameterized.expand([
-        [(128,), 2.7],
-        [(128,), 0.5],
-        [(128,), 0],
-        [(32, 128,), 2.7],
-        [(32, 128,), 0.5],
-        [(32, 128,), 0],
-    ])
-    def test_pow(self, shape, p):
-        x = np.random.uniform(0.0, 1.0, size=shape)
-        self._test_unary_op(shape=shape, method='__pow__', args=(p,), x=x)
+        self.helper._test_unary_op(shape=shape, method='exp', args=())
+
+
+class Helper(unittest.TestCase):
 
     def _test_unary_op(self, shape, method, args, x=None):
         _x = x if x is not None else np.random.normal(0.0, 1.0, size=shape)
