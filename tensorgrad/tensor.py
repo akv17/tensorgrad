@@ -2,8 +2,7 @@ from uuid import uuid4
 
 from .const import DTYPE, OP, DEVICE
 from .storage import StorageDispatch
-
-OpDispatch = None
+from .ops import OpDispatch
 
 
 class Tensor:
@@ -203,9 +202,9 @@ class Tensor:
         ob = type(self)(
             data=data,
             dtype=self.dtype,
+            device=self.device,
             name=name,
             requires_grad=self.requires_grad,
-            backend=self.backend
         )
         return ob
 
