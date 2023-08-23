@@ -9,5 +9,5 @@ def accumulate_broadcasted_grad(x, g):
     x_broad_dims = list(range(dim_diff))
     while x_broad_dims:
         dim = x_broad_dims.pop(-1)
-        g = g.sum(dim=dim)
+        g = g.sum(dim)
     return g

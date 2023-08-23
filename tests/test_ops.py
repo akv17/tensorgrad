@@ -24,7 +24,7 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_add(self, shape):
-        self.helper._test_binary_op(shape=shape, method='__add__')
+        self.helper._test_binary_op(a_shape=shape, b_shape=shape, method='__add__')
     
     @parameterized.expand([
         [(128,)],
@@ -33,7 +33,7 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_sub(self, shape):
-        self.helper._test_binary_op(shape=shape, method='__sub__')
+        self.helper._test_binary_op(a_shape=shape, b_shape=shape, method='__sub__')
     
     @parameterized.expand([
         [(128,)],
@@ -42,7 +42,7 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_mul(self, shape):
-        self.helper._test_binary_op(shape=shape, method='__mul__')
+        self.helper._test_binary_op(a_shape=shape, b_shape=shape, method='__mul__')
     
     @parameterized.expand([
         [(128,)],
@@ -51,7 +51,7 @@ class TestOps(unittest.TestCase):
         [(4, 8, 16, 32)],
     ])
     def test_div(self, shape):
-        self.helper._test_binary_op(shape=shape, method='__truediv__')
+        self.helper._test_binary_op(a_shape=shape, b_shape=shape, method='__truediv__')
     
     @parameterized.expand([
         [(128,), 2.7],
@@ -253,6 +253,26 @@ class TestOps(unittest.TestCase):
     def test_sigmoid(self, shape):
         self.helper._test_unary_op(shape=shape, method='sigmoid')
 
+    @parameterized.expand([
+        [(2, 4), (4, 2)],
+        [(2, 2), (2, 2)],
+        [(4, 1), (1, 4)],
+        [(1, 4), (4, 1)],
+        [(128, 256), (256, 128)],
+        [(2, 3, 4), (2, 4, 3)],
+        [(20, 30, 40), (20, 40, 30)],
+        [(2, 3, 4, 5), (2, 3, 5, 4)],
+        [(20, 30, 40, 50), (20, 30, 50, 40)],
+        [(2, 3, 4), (4, 5)],
+        [(2, 5, 3, 4), (4, 5)],
+        [(3, 2, 5, 3, 4), (4, 5)],
+        [(4, 5), (2, 5, 4)],
+        [(4, 5), (2, 3, 5, 4)],
+        [(4, 5), (3, 2, 4, 5, 4)],
+    ])
+    def test_matmul(self, a_shape, b_shape):
+        self.helper._test_binary_op(a_shape=a_shape, b_shape=b_shape, method='matmul', tol=1e-4)
+
 
 class Helper(unittest.TestCase):
 
@@ -274,9 +294,9 @@ class Helper(unittest.TestCase):
         self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=False), msg=f'{name}@forward')
         self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), show_diff=False), msg=f'{name}@x_grad')
 
-    def _test_binary_op(self, shape, method):
-        _a = np.random.normal(size=shape)
-        _b = np.random.normal(size=shape)
+    def _test_binary_op(self, a_shape, b_shape, method, tol=1e-5):
+        _a = np.random.normal(size=a_shape)
+        _b = np.random.normal(size=b_shape)
         
         a = tensorgrad.Tensor(_a, device=DEVICE, dtype=DTYPE, requires_grad=True, name='a')
         b = tensorgrad.Tensor(_b, device=DEVICE, dtype=DTYPE, requires_grad=True, name='b')
@@ -289,10 +309,10 @@ class Helper(unittest.TestCase):
         to = getattr(ta, method)(tb)
         self._backward_torch(to)
 
-        name = f'{shape}::{method}'
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=False), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(ta.grad.tolist(), a.grad.tolist(), show_diff=False), msg=f'{name}@a_grad')
-        self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), show_diff=False), msg=f'{name}@b_grad')
+        name = f'{a_shape}::{b_shape}::{method}'
+        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=False), msg=f'{name}@forward')
+        self.assertTrue(check_tensors(ta.grad.tolist(), a.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@a_grad')
+        self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
 
     def _backward_tensorgrad(self, tensor):
         r = tensor.arange(tensor.numel()).reshape(tensor.shape) + 1.0
