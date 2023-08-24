@@ -291,6 +291,55 @@ class TestOps(unittest.TestCase):
     def test_softmax(self, shape, dim):
         self.helper._test_unary_op(shape=shape, method='softmax', args=(dim,))
 
+    @parameterized.expand([
+        [2, (4, 4), (3, 3), 3, 4, False, (1, 1), (0, 0)],
+        [2, (4, 4), (3, 3), 3, 4, True, (1, 1), (0, 0)],
+        [2, (4, 4), (3, 3), 3, 4, True, (1, 1), (1, 1)],
+        [2, (4, 4), (3, 3), 3, 4, True, (1, 1), (2, 1)],
+        [2, (4, 4), (3, 3), 3, 4, True, (1, 1), (1, 2)],
+        [2, (4, 4), (3, 3), 3, 4, True, (1, 2), (0, 0)],
+        [2, (4, 4), (3, 3), 3, 4, True, (2, 1), (0, 0)],
+        [2, (4, 4), (3, 3), 3, 4, True, (2, 2), (0, 0)],
+        [2, (4, 4), (3, 3), 3, 4, True, (2, 2), (1, 1)],
+        [4, (28, 28), (3, 3), 3, 16, True, (1, 1), (0, 0)],
+    ])
+    def test_conv2d(
+        self,
+        batch_size,
+        input_size,
+        kernel_size,
+        in_channels,
+        out_channels,
+        bias,
+        stride,
+        padding
+    ):
+        _x = np.random.normal(size=(batch_size, in_channels, *input_size))
+        _k = np.random.normal(size=(out_channels, in_channels, *kernel_size))
+        _b = np.random.normal(size=(out_channels,)) if bias else None
+
+        x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
+        k = tensorgrad.Tensor(_k, device=DEVICE, dtype=DTYPE, requires_grad=True, name='k')
+        b = tensorgrad.Tensor(_b, device=DEVICE, dtype=DTYPE, requires_grad=True, name='b') if bias else None
+        o = x.conv2d(kernel=k, bias=b, stride=stride, padding=padding)
+        self.helper._backward_tensorgrad(o)
+
+        tdtype = getattr(torch, x.dtype.value)
+        tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
+        tk = torch.tensor(_k, requires_grad=True, dtype=tdtype)
+        tb = torch.tensor(_b, requires_grad=True, dtype=tdtype) if bias else None
+        to = torch.nn.functional.conv2d(tx, tk, tb, stride=stride, padding=padding)
+        self.helper._backward_torch(to)
+
+        name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{out_channels}::{bias}::{stride}::{padding}'
+        tol = 1e-4
+        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=True), msg=f'{name}@forward')
+        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@x_grad')
+        self.assertTrue(check_tensors(tk.grad.tolist(), k.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@k_grad')
+        if bias:
+            self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
+
+
 class Helper(unittest.TestCase):
 
     def _test_unary_op(self, shape, method, x=None, args=None, kwargs=None):
@@ -307,7 +356,7 @@ class Helper(unittest.TestCase):
         to = getattr(tx, method)(*args, **kwargs)
         self._backward_torch(to)
 
-        name = f'{shape}::{method}::{args}'
+        name = f'{shape}::{method}::{args}::{kwargs}'
         self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=False), msg=f'{name}@forward')
         self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), show_diff=False), msg=f'{name}@x_grad')
 
