@@ -95,7 +95,6 @@ class Conv2D(BaseOp):
         # we dilate upstream according to forward stride and then pad upstream according to forward padding.
         # next we need to rotate the kernel along its height and width.
         # finally grad is computed effectively as conv2d(x=upstream_modified, k=kernel_modified).
-        
         udh = sh - 1
         udw = sw - 1
         _u = self._dilate(u, udh, udw)
@@ -129,7 +128,7 @@ class Conv2D(BaseOp):
 
         # windows into input of same shape as in forward.
         # via einsum each such window is multiplied with corresponding pixel in the upstream.
-        # then the result is reduced over `kh` and `kw` dims of input each input window.
+        # then the result is reduced over batch, `kh` and `kw` dims of each input window.
         w = self._extract_windows(x, oh, ow, kh, kw, sh, sw)
         g = np.einsum('bihwkl,bohw->oikl', w, u, optimize=True)
         return g
