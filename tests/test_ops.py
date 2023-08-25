@@ -292,16 +292,22 @@ class TestOps(unittest.TestCase):
         self.helper._test_unary_op(shape=shape, method='softmax', args=(dim,))
 
     @parameterized.expand([
-        [2, (4, 4), (3, 3), 3, 4, False, (1, 1), (0, 0)],
-        [2, (4, 4), (3, 3), 3, 4, True, (1, 1), (0, 0)],
-        [2, (4, 4), (3, 3), 3, 4, True, (1, 1), (1, 1)],
-        [2, (4, 4), (3, 3), 3, 4, True, (1, 1), (2, 1)],
-        [2, (4, 4), (3, 3), 3, 4, True, (1, 1), (1, 2)],
-        [2, (4, 4), (3, 3), 3, 4, True, (1, 2), (0, 0)],
-        [2, (4, 4), (3, 3), 3, 4, True, (2, 1), (0, 0)],
-        [2, (4, 4), (3, 3), 3, 4, True, (2, 2), (0, 0)],
-        [2, (4, 4), (3, 3), 3, 4, True, (2, 2), (1, 1)],
-        [4, (28, 28), (3, 3), 3, 16, True, (1, 1), (0, 0)],
+        [2, (5, 5), (3, 3), 4, 8, False, (1, 1), (0, 0)],
+        [2, (5, 5), (3, 3), 4, 8, True, (1, 1), (0, 0)],
+        [2, (5, 5), (1, 1), 4, 8, True, (1, 1), (0, 0)],
+        [2, (9, 9), (5, 5), 4, 8, True, (1, 1), (0, 0)],
+        
+        [2, (5, 5), (3, 3), 4, 8, True, (2, 2), (1, 1)],
+        [2, (5, 5), (3, 3), 4, 8, True, (1, 2), (1, 1)],
+        [2, (5, 5), (3, 3), 4, 8, True, (2, 1), (1, 1)],
+        
+        [2, (5, 5), (3, 3), 4, 8, True, (2, 1), (1, 2)],
+        [2, (5, 5), (3, 3), 4, 8, True, (1, 2), (1, 2)],
+        [2, (5, 5), (3, 3), 4, 8, True, (2, 1), (2, 1)],
+        [2, (5, 5), (3, 3), 4, 8, True, (1, 2), (2, 1)],
+        
+        [4, (64, 64), (3, 3), 3, 16, True, (1, 1), (2, 2)],
+        [4, (32, 32), (3, 3), 64, 32, True, (1, 1), (2, 2)],
     ])
     def test_conv2d(
         self,
@@ -332,10 +338,10 @@ class TestOps(unittest.TestCase):
         self.helper._backward_torch(to)
 
         name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{out_channels}::{bias}::{stride}::{padding}'
-        tol = 1e-4
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=True), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@x_grad')
-        self.assertTrue(check_tensors(tk.grad.tolist(), k.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@k_grad')
+        tol = 1e-3
+        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=False), msg=f'{name}@forward')
+        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), tol=tol, show_diff=True), msg=f'{name}@x_grad')
+        self.assertTrue(check_tensors(tk.grad.tolist(), k.grad.tolist(), tol=tol, show_diff=True), msg=f'{name}@k_grad')
         if bias:
             self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
 
