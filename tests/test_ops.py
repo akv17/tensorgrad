@@ -236,6 +236,28 @@ class TestOps(unittest.TestCase):
         self.helper._test_unary_op(shape=shape, method='mean', args=(dim,))
     
     @parameterized.expand([
+        [(2, 3, 4), 2],
+        # [(128,), None],
+        # [(32, 64), None],
+        # [(32, 64), 0],
+        # [(32, 64), 1],
+        # [(32, 64), -1],
+        # [(32, 64), -2],
+        # [(8, 16, 32), None],
+        # [(8, 16, 32), 0],
+        # [(8, 16, 32), 1],
+        # [(8, 16, 32), 2],
+        # [(4, 8, 16, 32), None],
+        # [(4, 8, 16, 32), 0],
+        # [(4, 8, 16, 32), 1],
+        # [(4, 8, 16, 32), 2],
+        # [(4, 8, 16, 32), 3],
+    ])
+    def test_max_reduce(self, shape, dim):
+        args = (dim,) if dim is not None else ()
+        self.helper._test_unary_op(shape=shape, method='max', args=args)
+
+    @parameterized.expand([
         [(128,)],
         [(32, 64)],
         [(8, 16, 32)],
@@ -355,13 +377,22 @@ class Helper(unittest.TestCase):
         
         x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
         o = getattr(x, method)(*args, **kwargs)
+        # o.sum().backward()
         self._backward_tensorgrad(o)
 
         tdtype = getattr(torch, x.dtype.value)
         tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
         to = getattr(tx, method)(*args, **kwargs)
+        to = to[0] if isinstance(to, tuple) else to
+        # to.sum().backward()
         self._backward_torch(to)
-
+        print()
+        # print(_x)        
+        print()
+        print(tx.grad.tolist())
+        print()
+        print(x.grad.tolist())
+        
         name = f'{shape}::{method}::{args}::{kwargs}'
         self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=False), msg=f'{name}@forward')
         self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), show_diff=False), msg=f'{name}@x_grad')

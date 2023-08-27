@@ -115,7 +115,15 @@ class Tensor:
     def mean(self, dim=None):
         out = OpDispatch.execute(OP.MEAN_REDUCE, self, dim=dim)
         return out
-    
+        
+    def max(self, dim=None):
+        out = OpDispatch.execute(OP.MAX_REDUCE, self, dim=dim)
+        return out
+
+    def min(self, dim=None):
+        out = OpDispatch.execute(OP.MIN_REDUCE, self, dim=dim)
+        return out
+
     def relu(self):
         out = OpDispatch.execute(OP.RELU, self)
         return out

@@ -25,6 +25,8 @@ class OP(str, Enum):
     
     SUM_REDUCE = 'sum_reduce'
     MEAN_REDUCE = 'mean_reduce'
+    MAX_REDUCE = 'max_reduce'
+    MIN_REDUCE = 'min_reduce'
 
     SQUEEZE = 'squeeze'
     UNSQUEEZE = 'unsqueeze'

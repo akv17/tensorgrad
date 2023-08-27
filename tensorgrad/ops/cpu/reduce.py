@@ -45,3 +45,26 @@ class MeanReduce(ReduceOp):
                 out_grad = np.expand_dims(self.out.grad, self.dim)
             self.x.grad += 1.0 / size * out_grad
     
+
+@OpDispatch.register(OP.MAX_REDUCE, DEVICE.CPU)
+class MaxReduce(ReduceOp):
+
+    def __init__(self, x, *, dim=None):
+        super().__init__(x, dim=dim)
+        self._slice = None
+        self.mask = None
+        self.np = get_numpy()
+
+    def forward(self):
+        self.mask = self.x.data.argmax(self.dim, keepdims=True)
+        data = self.x.data.max(self.dim)
+        self.out = self.x.from_data(data)
+        return self.out
+
+    def backward(self):
+        if self.x.requires_grad:
+            g = self.np.zeros_like(self.x.data)
+            self.np.put_along_axis(g, self.mask, 1.0, self.dim)
+            u = self.np.expand_dims(self.out.grad, self.dim)
+            g *= u
+            self.x.grad += g
