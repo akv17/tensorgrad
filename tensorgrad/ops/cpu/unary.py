@@ -1,9 +1,11 @@
-from .interface import Op
-from ..const import OP
+from .util import get_numpy
+from ..stubs import BaseOp, UnaryOp
+from ..dispatch import OpDispatch
+from ...const import OP, DEVICE
 
 
-class Pow(Op):
-    NAME = OP.POW
+@OpDispatch.register(OP.POW, DEVICE.CPU)
+class Pow(BaseOp):
     
     def __init__(self, x, *, value):
         self.out = None
@@ -21,15 +23,12 @@ class Pow(Op):
             self.x.grad += (n * self.x.data ** (n-1)) * self.out.grad
 
 
-class Exp(Op):
-    NAME = OP.EXP
-    
-    def __init__(self, x):
-        self.out = None
-        self.x = x
+@OpDispatch.register(OP.EXP, DEVICE.CPU)
+class Exp(UnaryOp):
     
     def forward(self):
-        data = self.x.data.exp()
+        np = get_numpy()
+        data = np.exp(self.x.data)
         self.out = self.x.from_data(data)
         return self.out
     
@@ -38,15 +37,12 @@ class Exp(Op):
             self.x.grad += self.out.data * self.out.grad
 
 
-class Log(Op):
-    NAME = OP.LOG
-    
-    def __init__(self, x):
-        self.out = None
-        self.x = x
+@OpDispatch.register(OP.LOG, DEVICE.CPU)
+class Log(UnaryOp):
     
     def forward(self):
-        data = self.x.data.log()
+        np = get_numpy()
+        data = np.log(self.x.data)
         self.out = self.x.from_data(data)
         return self.out
     

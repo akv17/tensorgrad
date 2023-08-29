@@ -1,21 +1,17 @@
-from .interface import Op
-from .util import accumulate_broadcasted_grad
-from ..const import OP
+from ..stubs import BinaryOp
+from ..dispatch import OpDispatch
+from ..util import accumulate_broadcasted_grad
+from ...const import OP, DEVICE
 
 
-class Add(Op):
-    NAME = OP.ADD
-
-    def __init__(self, a, b):
-        self.out = None
-        self.a = a
-        self.b = b
+@OpDispatch.register(OP.ADD, DEVICE.CPU)
+class Add(BinaryOp):
 
     def forward(self):
-        data = self.a.data + self.b.data
-        self.out = self.a.from_data(data)
+        o = self.a.data + self.b.data
+        self.out = self.a.from_data(o)
         return self.out
-
+    
     def backward(self):
         if self.a.requires_grad:
             a_grad = self.out.grad
@@ -27,13 +23,8 @@ class Add(Op):
             self.b.grad += b_grad
 
 
-class Sub(Op):
-    NAME = OP.SUB
-
-    def __init__(self, a, b):
-        self.out = None
-        self.a = a
-        self.b = b
+@OpDispatch.register(OP.SUB, DEVICE.CPU)
+class Sub(BinaryOp):
 
     def forward(self):
         data = self.a.data - self.b.data
@@ -51,13 +42,8 @@ class Sub(Op):
             self.b.grad += b_grad
 
 
-class Mul(Op):
-    NAME = OP.MUL
-
-    def __init__(self, a, b):
-        self.out = None
-        self.a = a
-        self.b = b
+@OpDispatch.register(OP.MUL, DEVICE.CPU)
+class Mul(BinaryOp):
 
     def forward(self):
         data = self.a.data * self.b.data
@@ -75,13 +61,8 @@ class Mul(Op):
             self.b.grad += b_grad
 
 
-class Div(Op):
-    NAME = OP.DIV
-
-    def __init__(self, a, b):
-        self.out = None
-        self.a = a
-        self.b = b
+@OpDispatch.register(OP.DIV, DEVICE.CPU)
+class Div(BinaryOp):
 
     def forward(self):
         data = self.a.data / self.b.data

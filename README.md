@@ -18,6 +18,9 @@ TODO:
 - [] multiattention
 - [] layernorm
 
+[] arg checks
+    [] OpDispatch
+    [] custom checks for each op
 
 PROBLEMS:
 - dtype cast

@@ -1,7 +1,7 @@
 from uuid import uuid4
 
-from .const import DTYPE, OP, BACKEND
-from .backend import BackendDispatch
+from .const import OP
+from .storage import StorageDispatch
 from .ops import OpDispatch
 
 
@@ -11,37 +11,48 @@ class Tensor:
         self,
         data,
         dtype=None,
-        backend=None,
+        device=None,
         name=None,
         requires_grad=True,
     ):
-        self.backend = backend
-        self._backend = BackendDispatch.get(self.backend)
-        
-        self.dtype = dtype
         self.name = name or f'tensor@{str(uuid4())[:8]}'
         self.requires_grad = requires_grad
         
-        self.data = self._backend.tensor(data, dtype=self.dtype)
-        self.grad = self._backend.zeros(self.data.shape, dtype=self.dtype)
+        self._storage = StorageDispatch.get(device)
+        self.data = self._storage.tensor(data, dtype=dtype)
+        self.grad = self._storage.zeros(self.data.shape, dtype=dtype)
         
         self._children = ()
         self._op = None
 
     @property
+    def dtype(self):
+        return self._storage.get_dtype(self.data)
+
+    @property
+    def device(self):
+        return self._storage.get_device(self.data)
+
+    @property
     def shape(self):
-        return self.data.shape
+        return self._storage.get_shape(self.data)
     
     @property
     def ndim(self):
         return len(self.shape)
+    
+    def numel(self):
+        n = 1
+        for s in self.shape:
+            n *= s
+        return n
 
     @property
     def _backward(self):
         return self._op.backward if self._op is not None else lambda: None
     
     def __repr__(self):
-        return f'Tensor(name={self.name}, shape={self.shape}, dtype={self.dtype}, backend={self.backend})'
+        return f'Tensor(shape={self.shape}, dtype={self.dtype}, device={self.device}, name={self.name})'
 
     def __getitem__(self, slice_):
         out = OpDispatch.execute(OP.SELECT, self, slice_=slice_)
@@ -104,7 +115,15 @@ class Tensor:
     def mean(self, dim=None):
         out = OpDispatch.execute(OP.MEAN_REDUCE, self, dim=dim)
         return out
-    
+        
+    def max(self, dim=None):
+        out = OpDispatch.execute(OP.MAX_REDUCE, self, dim=dim)
+        return out
+
+    def min(self, dim=None):
+        out = OpDispatch.execute(OP.MIN_REDUCE, self, dim=dim)
+        return out
+
     def relu(self):
         out = OpDispatch.execute(OP.RELU, self)
         return out
@@ -151,9 +170,9 @@ class Tensor:
 
     def backward(self, upstream=None):
         if upstream is not None:
-            upstream = self._backend.tensor(upstream, dtype=self.dtype)
+            upstream = self._storage.tensor(upstream, dtype=self.dtype)
         else:
-            upstream = self._backend.ones(self.shape, dtype=self.dtype)
+            upstream = self._storage.ones(self.shape, dtype=self.dtype)
         self.grad = upstream
         nodes = self._traverse()
         for node in reversed(nodes):
@@ -168,19 +187,23 @@ class Tensor:
         return ob
 
     def zeros_like(self):
-        data = self._backend.zeros(self.data.shape, dtype=self.dtype)
+        data = self._storage.zeros(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def zeros(self, shape):
-        data = self._backend.zeros(shape, dtype=self.dtype)
+        data = self._storage.zeros(shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def ones_like(self):
-        data = self._backend.ones(self.data.shape, dtype=self.dtype)
+        data = self._storage.ones(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def ones(self, shape):
-        data = self._backend.ones(shape, dtype=self.dtype)
+        data = self._storage.ones(shape, dtype=self.dtype)
+        return self._copy_from_data(data)
+    
+    def arange(self, n):
+        data = self._storage.arange(n, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def tolist(self):
@@ -197,15 +220,15 @@ class Tensor:
         ob = type(self)(
             data=data,
             dtype=self.dtype,
+            device=self.device,
             name=name,
             requires_grad=self.requires_grad,
-            backend=self.backend
         )
         return ob
 
     def _wrap_constant_maybe(self, value):
         if isinstance(value, (float, int)):
-            value = self._backend.tensor(value, dtype=self.dtype)
+            value = self._storage.tensor(value, dtype=self.dtype)
             tensor = self._copy_from_data(value)
             tensor.requires_grad = False
             value = tensor

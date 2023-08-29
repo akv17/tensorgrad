@@ -1,45 +1,49 @@
-from .interface import Op
-from ..const import OP
+from .util import get_numpy
+from ..stubs import BaseOp
+from ..dispatch import OpDispatch
+from ...const import OP, DEVICE
 
 
-class Squeeze(Op):
-    NAME = OP.SQUEEZE
-
-    def __init__(self, x, *, dim):
-        self.out = None
-        self.x = x
-        self.dim = dim
-
-    def forward(self):
-        data = self.x.data.squeeze(self.dim)
-        self.out = self.x.from_data(data)
-        return self.out
-
-    def backward(self):
-        if self.x.requires_grad:
-            self.x.grad += self.out.grad.unsqueeze(self.dim)
-
-
-class Unsqueeze(Op):
-    NAME = OP.UNSQUEEZE
+@OpDispatch.register(OP.SQUEEZE, DEVICE.CPU)
+class Squeeze(BaseOp):
 
     def __init__(self, x, *, dim):
         self.out = None
         self.x = x
         self.dim = dim
+        self.np = get_numpy()
 
     def forward(self):
-        data = self.x.data.unsqueeze(self.dim)
+        data = self.np.squeeze(self.x.data, self.dim)
         self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
         if self.x.requires_grad:
-            self.x.grad += self.out.grad.squeeze(self.dim)
+            self.x.grad += self.np.expand_dims(self.out.grad, self.dim)
 
 
-class Reshape(Op):
-    NAME = OP.RESHAPE
+@OpDispatch.register(OP.UNSQUEEZE, DEVICE.CPU)
+class Unsqueeze(BaseOp):
+    
+    def __init__(self, x, *, dim):
+        self.out = None
+        self.x = x
+        self.dim = dim
+        self.np = get_numpy()
+
+    def forward(self):
+        data = self.np.expand_dims(self.x.data, self.dim)
+        self.out = self.x.from_data(data)
+        return self.out
+
+    def backward(self):
+        if self.x.requires_grad:
+            self.x.grad += self.np.squeeze(self.out.grad, self.dim)
+
+
+@OpDispatch.register(OP.RESHAPE, DEVICE.CPU)
+class Reshape(BaseOp):
 
     def __init__(self, x, *, shape):
         self.out = None
@@ -56,27 +60,28 @@ class Reshape(Op):
             self.x.grad += self.out.grad.reshape(self.x.grad.shape)
 
 
-class Permute(Op):
-    NAME = OP.PERMUTE
+@OpDispatch.register(OP.PERMUTE, DEVICE.CPU)
+class Permute(BaseOp):
 
     def __init__(self, x, *, dims):
         self.out = None
         self.x = x
         self.dims = dims
         self.dims_grad = tuple(self.dims.index(i) for i in range(self.x.ndim))
+        self.np = get_numpy()
     
     def forward(self):
-        data = self.x.data.permute(self.dims)
+        data = self.np.transpose(self.x.data, self.dims)
         self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
         if self.x.requires_grad:
-            self.x.grad += self.out.grad.permute(self.dims_grad)
+            self.x.grad += self.np.transpose(self.out.grad, self.dims_grad)
 
 
-class Select(Op):
-    NAME = OP.SELECT
+@OpDispatch.register(OP.SELECT, DEVICE.CPU)
+class Select(BaseOp):
 
     def __init__(self, x, *, slice_):
         self.out = None
@@ -90,6 +95,7 @@ class Select(Op):
 
     def backward(self):
         if self.x.requires_grad:
-            grad = self.x.data.zeros_like()
-            grad = grad.put(self.slice_, self.out.grad)
+            np = get_numpy()
+            grad = np.zeros_like(self.x.data)
+            grad[self.slice_] = self.out.grad
             self.x.grad += grad
