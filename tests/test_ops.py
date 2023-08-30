@@ -366,6 +366,59 @@ class TestOps(unittest.TestCase):
         self.assertTrue(check_tensors(tk.grad.tolist(), k.grad.tolist(), tol=tol, show_diff=True), msg=f'{name}@k_grad')
         if bias:
             self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
+    
+    @parameterized.expand([
+        [2, (8, 8), (2, 2), 3, (2, 2), (0, 0)],
+        [2, (8, 8), (2, 2), 3, (1, 2), (0, 0)],
+        [2, (8, 8), (2, 2), 3, (2, 1), (0, 0)],
+        [2, (8, 8), (2, 2), 3, (2, 2), (1, 1)],
+        [2, (8, 8), (2, 2), 16, (2, 2), (1, 1)],
+    ])
+    def test_max_pool2d(
+        self,
+        batch_size,
+        input_size,
+        kernel_size,
+        in_channels,
+        stride,
+        padding
+    ):
+        self.helper._test_pool_op(
+            method='max_pool2d',
+            batch_size=batch_size,
+            input_size=input_size,
+            kernel_size=kernel_size,
+            in_channels=in_channels,
+            stride=stride,
+            padding=padding,
+        )
+
+    @parameterized.expand([
+        [2, (4, 4), (2, 2), 3, (2, 2), (0, 0)],
+        [2, (8, 8), (2, 2), 3, (2, 2), (0, 0)],
+        [2, (8, 8), (2, 2), 3, (1, 2), (0, 0)],
+        [2, (8, 8), (2, 2), 3, (2, 1), (0, 0)],
+        [2, (8, 8), (2, 2), 3, (2, 2), (1, 1)],
+        [2, (8, 8), (2, 2), 16, (2, 2), (1, 1)],
+    ])
+    def test_avg_pool2d(
+        self,
+        batch_size,
+        input_size,
+        kernel_size,
+        in_channels,
+        stride,
+        padding,
+    ):
+        self.helper._test_pool_op(
+            method='avg_pool2d',
+            batch_size=batch_size,
+            input_size=input_size,
+            kernel_size=kernel_size,
+            in_channels=in_channels,
+            stride=stride,
+            padding=padding,
+        )
 
 
 class Helper(unittest.TestCase):
@@ -377,21 +430,13 @@ class Helper(unittest.TestCase):
         
         x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
         o = getattr(x, method)(*args, **kwargs)
-        # o.sum().backward()
         self._backward_tensorgrad(o)
 
         tdtype = getattr(torch, x.dtype.value)
         tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
         to = getattr(tx, method)(*args, **kwargs)
         to = to[0] if isinstance(to, tuple) else to
-        # to.sum().backward()
         self._backward_torch(to)
-        print()
-        # print(_x)        
-        print()
-        print(tx.grad.tolist())
-        print()
-        print(x.grad.tolist())
         
         name = f'{shape}::{method}::{args}::{kwargs}'
         self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=False), msg=f'{name}@forward')
@@ -416,6 +461,32 @@ class Helper(unittest.TestCase):
         self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=False), msg=f'{name}@forward')
         self.assertTrue(check_tensors(ta.grad.tolist(), a.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@a_grad')
         self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
+    
+    def _test_pool_op(
+        self,
+        method,
+        batch_size,
+        input_size,
+        kernel_size,
+        in_channels,
+        stride,
+        padding
+    ):
+        _x = np.random.normal(size=(batch_size, in_channels, *input_size))
+
+        x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
+        o = getattr(x, method)(kernel_size=kernel_size, stride=stride, padding=padding)
+        self._backward_tensorgrad(o)
+
+        tdtype = getattr(torch, x.dtype.value)
+        tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
+        to = getattr(torch.nn.functional, method)(tx, kernel_size=kernel_size, stride=stride, padding=padding)
+        self._backward_torch(to)
+
+        name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{stride}::{padding}'
+        tol = 1e-4
+        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=False), msg=f'{name}@forward')
+        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@x_grad')
 
     def _backward_tensorgrad(self, tensor):
         r = tensor.arange(tensor.numel()).reshape(tensor.shape) + 1.0

@@ -39,3 +39,5 @@ class OP(str, Enum):
     SOFTMAX = 'softmax'
     MATMUL = 'matmul'
     CONV2D = 'conv2d'
+    MAX_POOL2D = 'max_pool2d'
+    AVG_POOL2D = 'avg_pool2d'

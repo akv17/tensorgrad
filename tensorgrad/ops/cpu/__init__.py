@@ -6,3 +6,4 @@ from .activation import *
 from .matmul import *
 from .softmax import *
 from .conv2d import *
+from .pool import *

@@ -167,6 +167,16 @@ class Tensor:
         children = (self, kernel, bias) if bias is not None else (self, kernel)
         out = OpDispatch.execute(OP.CONV2D, *children, stride=stride, padding=padding)
         return out
+    
+    def max_pool2d(self, kernel_size, stride=None, padding=None):
+        children = (self,)
+        out = OpDispatch.execute(OP.MAX_POOL2D, *children, kernel_size=kernel_size, stride=stride, padding=padding)
+        return out
+    
+    def avg_pool2d(self, kernel_size, stride=None, padding=None):
+        children = (self,)
+        out = OpDispatch.execute(OP.AVG_POOL2D, *children, kernel_size=kernel_size, stride=stride, padding=padding)
+        return out
 
     def backward(self, upstream=None):
         if upstream is not None:
