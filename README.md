@@ -10,10 +10,10 @@ TODO:
 - [x] sgd
 - [x] adam
 
-- [] maxreduce
+- [x] maxreduce
 - [x] conv2d
 - [] batchnorm2d
-- [] maxpool2d
+- [x] maxpool2d
 
 - [] multiattention
 - [] layernorm
