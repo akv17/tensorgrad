@@ -1,6 +1,5 @@
-import math
-
 from .util import get_numpy
+from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
@@ -71,14 +70,14 @@ class Conv2D(BaseOp):
         
         ih, iw = x.shape[-2:]
         kh, kw = k.shape[-2:]
-        oh, ow = self._compute_output_size(ih, iw, kh, kw, sh, sw)
+        oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
         co = k.shape[0]
         b = b if b is not None else np.zeros((co,), dtype=k.dtype)
         
         # windows into input of shape: B x IC x OH x OW x KH x KW.
         # basically this is a collection of all windows to which kernel is applied.
         # kernel is multiplied and reduced with each such window.
-        w = self._extract_windows(x, oh, ow, kh, kw, sh, sw)
+        w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
         o = np.einsum('bihwkl,oikl->bohw', w, k, optimize=True)
         o += b.reshape(1, -1, 1, 1)
         return o
@@ -107,7 +106,7 @@ class Conv2D(BaseOp):
         # note that IH and IW are padded according to padding applied in forward pass.
         # kernel is multiplied and reduced with each such window.
         # finally we cancel padding by slicing off pads.
-        w = self._extract_windows(_u, ihp, iwp, kh, kw, 1, 1)
+        w = conv2d_extract_windows(_u, ihp, iwp, kh, kw, 1, 1)
         g = np.einsum('bohwkl,oikl->bihw', w, _k, optimize=True)
         
         if ph != 0:
@@ -124,34 +123,18 @@ class Conv2D(BaseOp):
         
         ih, iw = x.shape[-2:]
         kh, kw = k.shape[-2:]
-        oh, ow = self._compute_output_size(ih, iw, kh, kw, sh, sw)
+        oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
 
         # windows into input of same shape as in forward.
         # via einsum each such window is multiplied with corresponding pixel in the upstream.
         # then the result is reduced over batch, `kh` and `kw` dims of each input window.
-        w = self._extract_windows(x, oh, ow, kh, kw, sh, sw)
+        w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
         g = np.einsum('bihwkl,bohw->oikl', w, u, optimize=True)
         return g
 
     def _backward_b(self, u):
         g = u.sum((0, 2, 3))
         return g
-
-    def _compute_output_size(self, ih, iw, kh, kw, sh, sw):
-        oh = math.floor((ih - kh) / sh + 1)
-        ow = math.floor((iw - kw) / sw + 1)
-        return oh, ow
-
-    def _extract_windows(self, x, oh, ow, kh, kw, sh, sw):
-        np = self.np
-        isz = x.itemsize
-        bs = x.shape[0]
-        ci = x.shape[1]
-        bss, cis, ihs, _ = np.array(x.strides) // isz
-        shape = (bs, ci, oh, ow, kh, kw)
-        strides = np.array([bss, cis, ihs * sh, sw, ihs, 1]) * isz
-        w = np.lib.stride_tricks.as_strided(x, shape, strides)
-        return w
     
     def _dilate(self, x, dh, dw, ah=2, aw=3):
         np = self.np

@@ -23,8 +23,7 @@ TODO:
     [] custom checks for each op
 
 PROBLEMS:
-- dtype cast
 - universal data transfer via .numpy()
 - controlling requires_grad for nn.modules
 - Parameter type
-- clean up tests
+- numpy export for cpu ops is lame atm

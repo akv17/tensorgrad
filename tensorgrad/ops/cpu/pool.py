@@ -1,9 +1,8 @@
-import math
-
 import numba
 import numpy as np
 
 from .util import get_numpy
+from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
@@ -32,9 +31,9 @@ class MaxPool2D(BaseOp):
         ci = x.shape[1]
         kh, kw = self.kernel_size
         sh, sw = self.stride
-        oh, ow = self._compute_output_size(ih, iw, kh, kw, sh, sw)
+        oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
         
-        w = self._extract_windows(x, oh, ow, kh, kw, sh, sw)
+        w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
         w = w.reshape(bs, ci, oh, ow, kh * kw)
         mask = np.argmax(w, -1)
         self.mask = mask
@@ -57,7 +56,7 @@ class MaxPool2D(BaseOp):
         ci = x.shape[1]
         kh, kw = self.kernel_size
         sh, sw = self.stride
-        oh, ow = self._compute_output_size(ih, iw, kh, kw, sh, sw)
+        oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
 
         u = self.out.grad
         g = np.zeros_like(x)
@@ -72,22 +71,6 @@ class MaxPool2D(BaseOp):
         if ph > 0 or pw > 0:
             g = g[..., ph:-ph, pw:-pw]
         self.x.grad += g
-    
-    def _extract_windows(self, x, oh, ow, kh, kw, sh, sw):
-        np = self.np
-        isz = x.itemsize
-        bs = x.shape[0]
-        ci = x.shape[1]
-        bss, cis, ihs, _ = np.array(x.strides) // isz
-        shape = (bs, ci, oh, ow, kh, kw)
-        strides = np.array([bss, cis, ihs * sh, sw, ihs, 1]) * isz
-        w = np.lib.stride_tricks.as_strided(x, shape, strides)
-        return w
-
-    def _compute_output_size(self, ih, iw, kh, kw, sh, sw):
-        oh = math.floor((ih - kh) / sh + 1)
-        ow = math.floor((iw - kw) / sw + 1)
-        return oh, ow
 
 
 @numba.jit(nopython=True)
@@ -131,9 +114,9 @@ class AvgPool2D(BaseOp):
         ci = x.shape[1]
         kh, kw = self.kernel_size
         sh, sw = self.stride
-        oh, ow = self._compute_output_size(ih, iw, kh, kw, sh, sw)
+        oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
         
-        w = self._extract_windows(x, oh, ow, kh, kw, sh, sw)
+        w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
         w = w.reshape(bs, ci, oh, ow, kh * kw)
         o = w.mean(-1)
         self.out = self.x.from_data(o)
@@ -154,7 +137,7 @@ class AvgPool2D(BaseOp):
         ci = x.shape[1]
         kh, kw = self.kernel_size
         sh, sw = self.stride
-        oh, ow = self._compute_output_size(ih, iw, kh, kw, sh, sw)
+        oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
 
         u = self.out.grad
         g = np.zeros_like(x)
@@ -168,22 +151,6 @@ class AvgPool2D(BaseOp):
         if ph > 0 or pw > 0:
             g = g[..., ph:-ph, pw:-pw]
         self.x.grad += g
-    
-    def _extract_windows(self, x, oh, ow, kh, kw, sh, sw):
-        np = self.np
-        isz = x.itemsize
-        bs = x.shape[0]
-        ci = x.shape[1]
-        bss, cis, ihs, _ = np.array(x.strides) // isz
-        shape = (bs, ci, oh, ow, kh, kw)
-        strides = np.array([bss, cis, ihs * sh, sw, ihs, 1]) * isz
-        w = np.lib.stride_tricks.as_strided(x, shape, strides)
-        return w
-
-    def _compute_output_size(self, ih, iw, kh, kw, sh, sw):
-        oh = math.floor((ih - kh) / sh + 1)
-        ow = math.floor((iw - kw) / sw + 1)
-        return oh, ow
 
 
 @numba.jit(nopython=True)
