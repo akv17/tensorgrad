@@ -46,28 +46,48 @@ class MeanReduce(ReduceOp):
             self.x.grad += 1.0 / size * out_grad
     
 
-@OpDispatch.register(OP.MAX_REDUCE, DEVICE.CPU)
-class MaxReduce(ReduceOp):
+class _MinMaxReduce(ReduceOp):
+    _FUNC = None
 
     def __init__(self, x, *, dim=None):
         super().__init__(x, dim=dim)
-        self._slice = None
         self.mask = None
         self.np = get_numpy()
+        self._func = self._FUNC
+        self._argfunc = f'arg{self._func}'
 
     def forward(self):
-        self.mask = self.x.data.argmax(self.dim, keepdims=True)
-        data = self.x.data.max(self.dim)
+        x = self.x.data
+        argfunc = getattr(x, self._argfunc)
+        self.mask = argfunc(self.dim, keepdims=True)
+        func = getattr(x, self._func)
+        data = func(self.dim)
         self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
         if self.x.requires_grad:
+            u = self.out.grad
             g = self.np.zeros_like(self.x.data)
-            self.np.put_along_axis(g, self.mask, 1.0, self.dim)
-            u = self.np.expand_dims(self.out.grad, self.dim)
+            if self.dim is None:
+                ix = self.mask.item()
+                ix = self.np.unravel_index(ix, self.x.shape)
+                g[ix] = 1.0
+            else:
+                self.np.put_along_axis(g, self.mask, 1.0, self.dim)
+                u = self.np.expand_dims(u, self.dim)
             g *= u
             self.x.grad += g
+
+
+@OpDispatch.register(OP.MAX_REDUCE, DEVICE.CPU)
+class MaxReduce(_MinMaxReduce):
+    _FUNC = 'max'
+
+
+@OpDispatch.register(OP.MIN_REDUCE, DEVICE.CPU)
+class MinReduce(_MinMaxReduce):
+    _FUNC = 'min'
 
 
 @OpDispatch.register(OP.STD_REDUCE, DEVICE.CPU)

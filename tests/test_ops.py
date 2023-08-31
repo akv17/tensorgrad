@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import numpy as np
@@ -10,6 +11,8 @@ torch = require_torch()
 
 DEVICE = get_device()
 DTYPE = get_dtype()
+SHOW_DIFF = os.getenv('TESTS_SHOW_DIFF') == '1'
+RENDER = os.getenv('TESTS_RENDER') == '1'
 
 
 class TestOps(unittest.TestCase):
@@ -245,26 +248,69 @@ class TestOps(unittest.TestCase):
         self.helper._test_unary_op(shape=shape, method='mean', args=(dim,))
     
     @parameterized.expand([
+        [(8,), None],
+        [(8,), 0],
         [(2, 3, 4), 2],
-        # [(128,), None],
-        # [(32, 64), None],
-        # [(32, 64), 0],
-        # [(32, 64), 1],
-        # [(32, 64), -1],
-        # [(32, 64), -2],
-        # [(8, 16, 32), None],
-        # [(8, 16, 32), 0],
-        # [(8, 16, 32), 1],
-        # [(8, 16, 32), 2],
-        # [(4, 8, 16, 32), None],
-        # [(4, 8, 16, 32), 0],
-        # [(4, 8, 16, 32), 1],
-        # [(4, 8, 16, 32), 2],
-        # [(4, 8, 16, 32), 3],
+        [(32, 64), None],
+        [(32, 64), 0],
+        [(32, 64), 1],
+        [(32, 64), -1],
+        [(32, 64), -2],
+        [(8, 16, 32), None],
+        [(8, 16, 32), 0],
+        [(8, 16, 32), 1],
+        [(8, 16, 32), 2],
+        [(4, 8, 16, 32), None],
+        [(4, 8, 16, 32), 0],
+        [(4, 8, 16, 32), 1],
+        [(4, 8, 16, 32), 2],
+        [(4, 8, 16, 32), 3],
+    ])
+    def test_std_reduce(self, shape, dim):
+        torch_kwargs = {'correction': 0.0}
+        self.helper._test_unary_op(shape=shape, method='std', args=(dim,), torch_kwargs=torch_kwargs)
+    
+    @parameterized.expand([
+        [(8,), None],
+        [(32, 64), None],
+        [(32, 64), 0],
+        [(32, 64), 1],
+        [(32, 64), -1],
+        [(32, 64), -2],
+        [(8, 16, 32), None],
+        [(8, 16, 32), 0],
+        [(8, 16, 32), 1],
+        [(8, 16, 32), 2],
+        [(4, 8, 16, 32), None],
+        [(4, 8, 16, 32), 0],
+        [(4, 8, 16, 32), 1],
+        [(4, 8, 16, 32), 2],
+        [(4, 8, 16, 32), 3],
     ])
     def test_max_reduce(self, shape, dim):
         args = (dim,) if dim is not None else ()
         self.helper._test_unary_op(shape=shape, method='max', args=args)
+
+    @parameterized.expand([
+        [(8,), None],
+        [(32, 64), None],
+        [(32, 64), 0],
+        [(32, 64), 1],
+        [(32, 64), -1],
+        [(32, 64), -2],
+        [(8, 16, 32), None],
+        [(8, 16, 32), 0],
+        [(8, 16, 32), 1],
+        [(8, 16, 32), 2],
+        [(4, 8, 16, 32), None],
+        [(4, 8, 16, 32), 0],
+        [(4, 8, 16, 32), 1],
+        [(4, 8, 16, 32), 2],
+        [(4, 8, 16, 32), 3],
+    ])
+    def test_min_reduce(self, shape, dim):
+        args = (dim,) if dim is not None else ()
+        self.helper._test_unary_op(shape=shape, method='min', args=args)
 
     @parameterized.expand([
         [(128,)],
@@ -432,24 +478,27 @@ class TestOps(unittest.TestCase):
 
 class Helper(unittest.TestCase):
 
-    def _test_unary_op(self, shape, method, x=None, args=None, kwargs=None):
+    def _test_unary_op(self, shape, method, x=None, args=None, kwargs=None, torch_kwargs=None):
         args = args or ()
         kwargs = kwargs or {}
+        torch_kwargs = torch_kwargs or {}
         _x = x if x is not None else np.random.normal(0.0, 1.0, size=shape)
         
         x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
         o = getattr(x, method)(*args, **kwargs)
         self._backward_tensorgrad(o)
+        if RENDER:
+            o.render()
 
         tdtype = getattr(torch, x.dtype.value)
         tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
-        to = getattr(tx, method)(*args, **kwargs)
+        to = getattr(tx, method)(*args, **kwargs, )
         to = to[0] if isinstance(to, tuple) else to
         self._backward_torch(to)
-        
+
         name = f'{shape}::{method}::{args}::{kwargs}'
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=False), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), show_diff=False), msg=f'{name}@x_grad')
+        self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@forward')
+        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@x_grad')
 
     def _test_binary_op(self, a_shape, b_shape, method, tol=1e-5):
         _a = np.random.normal(size=a_shape)
@@ -459,6 +508,8 @@ class Helper(unittest.TestCase):
         b = tensorgrad.Tensor(_b, device=DEVICE, dtype=DTYPE, requires_grad=True, name='b')
         o = getattr(a, method)(b)
         self._backward_tensorgrad(o)
+        if RENDER:
+            o.render()
 
         tdtype = getattr(torch, a.dtype.value)
         ta = torch.tensor(_a, requires_grad=True, dtype=tdtype)
@@ -467,9 +518,9 @@ class Helper(unittest.TestCase):
         self._backward_torch(to)
 
         name = f'{a_shape}::{b_shape}::{method}'
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=False), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(ta.grad.tolist(), a.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@a_grad')
-        self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
+        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@forward')
+        self.assertTrue(check_tensors(ta.grad.tolist(), a.grad.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@a_grad')
+        self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@b_grad')
     
     def _test_pool_op(
         self,
@@ -486,23 +537,18 @@ class Helper(unittest.TestCase):
         x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
         o = getattr(x, method)(kernel_size=kernel_size, stride=stride, padding=padding)
         self._backward_tensorgrad(o)
+        if RENDER:
+            o.render()
 
         tdtype = getattr(torch, x.dtype.value)
         tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
         to = getattr(torch.nn.functional, method)(tx, kernel_size=kernel_size, stride=stride, padding=padding)
         self._backward_torch(to)
 
-        print(tx.grad)
-        print()
-        print()
-        print()
-        print()
-        print(x.grad)
-
         name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{stride}::{padding}'
         tol = 1e-4
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=False), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@x_grad')
+        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@forward')
+        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@x_grad')
 
     def _backward_tensorgrad(self, tensor):
         r = tensor.arange(tensor.numel()).reshape(tensor.shape) + 1.0
