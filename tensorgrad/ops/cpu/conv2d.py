@@ -1,5 +1,5 @@
 from .util import get_numpy
-from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows
+from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, conv2d_dilate
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
@@ -96,7 +96,7 @@ class Conv2D(BaseOp):
         # finally grad is computed effectively as conv2d(x=upstream_modified, k=kernel_modified).
         udh = sh - 1
         udw = sw - 1
-        _u = self._dilate(u, udh, udw)
+        _u = conv2d_dilate(u, udh, udw)
         uph = kh - 1
         upw = kw - 1
         _u = np.pad(_u, [(0, 0), (0, 0), (uph, uph), (upw, upw)])
@@ -135,13 +135,3 @@ class Conv2D(BaseOp):
     def _backward_b(self, u):
         g = u.sum((0, 2, 3))
         return g
-    
-    def _dilate(self, x, dh, dw, ah=2, aw=3):
-        np = self.np
-        idx = np.arange(x.shape[ah] - 1) + 1
-        idx = np.repeat(idx, dh)
-        x = np.insert(x, idx, 0, axis=ah)
-        idx = np.arange(x.shape[aw] - 1) + 1
-        idx = np.repeat(idx, dw)
-        x = np.insert(x, idx, 0, axis=aw)
-        return x

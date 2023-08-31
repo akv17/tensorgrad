@@ -18,3 +18,13 @@ def conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw):
     strides = np.array([bss, cis, ihs * sh, sw, ihs, 1]) * isz
     w = np.lib.stride_tricks.as_strided(x, shape, strides)
     return w
+
+
+def conv2d_dilate(x, dh, dw, ah=2, aw=3):
+    idx = np.arange(x.shape[ah] - 1) + 1
+    idx = np.repeat(idx, dh)
+    x = np.insert(x, idx, 0, axis=ah)
+    idx = np.arange(x.shape[aw] - 1) + 1
+    idx = np.repeat(idx, dw)
+    x = np.insert(x, idx, 0, axis=aw)
+    return x

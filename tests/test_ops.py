@@ -483,6 +483,13 @@ class Helper(unittest.TestCase):
         to = getattr(torch.nn.functional, method)(tx, kernel_size=kernel_size, stride=stride, padding=padding)
         self._backward_torch(to)
 
+        print(tx.grad)
+        print()
+        print()
+        print()
+        print()
+        print(x.grad)
+
         name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{stride}::{padding}'
         tol = 1e-4
         self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=False), msg=f'{name}@forward')
