@@ -68,3 +68,31 @@ class MaxReduce(ReduceOp):
             u = self.np.expand_dims(self.out.grad, self.dim)
             g *= u
             self.x.grad += g
+
+
+@OpDispatch.register(OP.STD_REDUCE, DEVICE.CPU)
+class StdReduce(ReduceOp):
+
+    def __init__(self, x, *, dim=None):
+        super().__init__(x, dim=dim)
+        self.np = get_numpy()
+        self._head = None
+        self._tail = None
+
+    def forward(self):
+        x = self.x.detach()
+        mean = x.mean(self.dim)
+        mean = mean.unsqueeze(self.dim) if self.dim is not None else mean
+        var_ = (x - mean) ** 2
+        n = x.shape[self.dim] if self.dim is not None else x.numel()
+        n -= 1
+        std = (var_.sum(self.dim) / n).sqrt()
+        self._head = x
+        self._tail = std
+        self.out = std.detach()
+        return self.out
+
+    def backward(self):
+        if self.x.requires_grad:
+            self._tail.backward(self.out.grad)
+            self.x.grad += self._head.grad

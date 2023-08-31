@@ -28,6 +28,7 @@ class OP(str, Enum):
     MEAN_REDUCE = 'mean_reduce'
     MAX_REDUCE = 'max_reduce'
     MIN_REDUCE = 'min_reduce'
+    STD_REDUCE = 'std_reduce'
 
     SQUEEZE = 'squeeze'
     UNSQUEEZE = 'unsqueeze'

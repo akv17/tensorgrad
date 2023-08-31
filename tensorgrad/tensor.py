@@ -119,6 +119,10 @@ class Tensor:
     def mean(self, dim=None):
         out = OpDispatch.execute(OP.MEAN_REDUCE, self, dim=dim)
         return out
+    
+    def std(self, dim=None):
+        out = OpDispatch.execute(OP.STD_REDUCE, self, dim=dim)
+        return out
         
     def max(self, dim=None):
         out = OpDispatch.execute(OP.MAX_REDUCE, self, dim=dim)
@@ -194,6 +198,10 @@ class Tensor:
 
     def copy(self):
         ob = self._copy_from_data(self.data)
+        return ob
+    
+    def detach(self):
+        ob = self.copy()
         return ob
 
     def from_data(self, data):
