@@ -100,6 +100,10 @@ class Tensor:
         out = OpDispatch.execute(OP.MUL, self, neg)
         return out
 
+    def sqrt(self):
+        out = self ** 0.5
+        return out
+
     def exp(self):
         out = OpDispatch.execute(OP.EXP, self)
         return out

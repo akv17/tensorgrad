@@ -64,7 +64,16 @@ class TestOps(unittest.TestCase):
     def test_pow(self, shape, p):
         x = np.random.uniform(0.0, 1.0, size=shape)
         self.helper._test_unary_op(shape=shape, method='__pow__', args=(p,), x=x)
-    
+
+    @parameterized.expand([
+        [(128,)],
+        [(16, 32)],
+        [(8, 16, 32,)],
+    ])
+    def test_sqrt(self, shape):
+        x = np.random.uniform(0.0, 1.0, size=shape)
+        self.helper._test_unary_op(shape=shape, method='sqrt', x=x)
+
     @parameterized.expand([
         [(128,)],
         [(32, 128)],

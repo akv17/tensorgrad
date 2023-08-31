@@ -22,6 +22,7 @@ class OP(str, Enum):
     POW = 'pow'
     EXP = 'exp'
     LOG = 'log'
+    SQRT = 'sqrt'
     
     SUM_REDUCE = 'sum_reduce'
     MEAN_REDUCE = 'mean_reduce'
