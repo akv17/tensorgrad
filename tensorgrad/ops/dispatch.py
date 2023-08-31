@@ -23,6 +23,7 @@ class OpDispatch:
             if key in cls._DISPATCH:
                 msg = f'op already registered: {key} -> {cls._DISPATCH[key]}'
                 raise KeyError(msg)
+            impl.NAME = op
             cls._DISPATCH[key] = impl
             return impl
         return _deco
