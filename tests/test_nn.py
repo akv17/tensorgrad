@@ -57,6 +57,70 @@ class TestNN(unittest.TestCase):
                 [tm.bias.grad, m.bias.grad, tol, f'{name}@b_grad'],
             ])
 
+    @parameterized.expand([
+        [2, (32, 32), (3, 3), 3, 16, False, 1, 0],
+        [2, (32, 32), (3, 3), 3, 16, True, 1, 0],
+        [2, (32, 32), 3, 3, 16, True, 1, 0],
+        [2, (32, 32), 3, 3, 16, True, (2, 2), (1, 1)],
+        [2, (32, 32), 3, 3, 16, True, 4, 2],
+        [2, (32, 32), 3, 3, 16, True, 1, 'valid'],
+        [2, (32, 32), 3, 3, 16, True, 1, 'same'],
+        [2, (32, 32), 5, 3, 16, True, 1, 'same'],
+    ])
+    def test_conv2d(
+        self,
+        batch_size,
+        input_size,
+        kernel_size,
+        in_channels,
+        out_channels,
+        bias,
+        stride,
+        padding
+    ):
+        _x = np.random.normal(size=(batch_size, in_channels, *input_size))
+        in_channels = in_channels
+        out_channels = out_channels
+
+        tdtype = getattr(torch, DTYPE.value)
+        tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
+        tm = torch.nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            bias=bias
+        )
+        to = tm(tx)
+        self.helper._backward_torch(to)
+
+        x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
+        m = tensorgrad.nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            bias=bias
+        )
+        m.weight = tensorgrad.Tensor(tm.weight.detach().numpy(), dtype=DTYPE, device=DEVICE, name='w', requires_grad=True)
+        if bias:
+            m.bias = tensorgrad.Tensor(tm.bias.detach().numpy(), dtype=DTYPE, device=DEVICE, name='b', requires_grad=True)
+        o = m(x)
+        self.helper._backward_tensorgrad(o)
+
+        name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{out_channels}::{bias}::{stride}::{padding}'
+        tol = 1e-4
+        self.helper._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [tx.grad, x.grad, tol, f'{name}@x_grad'],
+            [tm.weight.grad, m.weight.grad, tol, f'{name}@w_grad'],
+        ])
+        if bias:
+            self.helper._check_tensors([
+                [tm.bias.grad, m.bias.grad, tol, f'{name}@b_grad'],
+            ])
 
     @parameterized.expand([
         [(2, 8)],

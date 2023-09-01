@@ -48,6 +48,73 @@ class Linear(Module):
         return [self.weight, self.bias] if self.use_bias else [self.weight]
 
 
+class Conv2d(Module):
+    """
+    maybe check params against each other.
+
+    weight: [co, ci, kh, kw]
+    bias: [co,]
+    """
+    
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        bias=True,
+        name=None
+    ):
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.use_bias = bias
+        self.name = name or f'Linear@{id(self)}'
+
+        self._normalize_kernel_size()
+        self._normalize_stride()
+        self._normalize_padding()
+
+        self.weight = None
+        self.bias = None
+
+    def __call__(self, *args, **kwargs):
+        out = self.forward(*args, **kwargs)
+        return out
+
+    def forward(self, x):
+        out = x.conv2d(kernel=self.weight, bias=self.bias, stride=self._stride, padding=self._padding)
+        return out
+
+    def parameters(self):
+        return [self.weight, self.bias] if self.use_bias else [self.weight]
+
+    def _normalize_kernel_size(self):
+        ks = self.kernel_size
+        self._kernel_size = (ks, ks) if isinstance(ks, int) else ks
+
+    def _normalize_stride(self):
+        s = self.stride
+        self._stride = (s, s) if isinstance(s, int) else s
+    
+    def _normalize_padding(self):
+        p = self.padding
+        if isinstance(p, int):
+            self._padding = (p, p)
+        elif p == 'same':
+            kh, kw = self._kernel_size
+            ph = (kh - 1) // 2
+            pw = (kw - 1) // 2
+            self._padding = (ph, pw)
+        elif p == 'valid':
+            self._padding = (0, 0)
+        else:
+            self._padding = p
+
+
 class BatchNorm1d(Module):
     """
     check 2d only
