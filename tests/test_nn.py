@@ -36,13 +36,42 @@ class TestNN(unittest.TestCase):
         self.helper._backward_torch(to)
 
         x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
-        m = tensorgrad.nn.BatchNorm1D(num_features=num_features)
+        m = tensorgrad.nn.BatchNorm1d(num_features=num_features)
         m.weight = tensorgrad.Tensor(tm.weight.detach().numpy(), dtype=DTYPE, device=DEVICE, name='w', requires_grad=True)
         m.bias = tensorgrad.Tensor(tm.bias.detach().numpy(), dtype=DTYPE, device=DEVICE, name='b', requires_grad=True)
         o = m(x)
         self.helper._backward_tensorgrad(o)
 
         tol = 1e-5
+        name = f'{shape}'
+        self.helper._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [tx.grad, x.grad, tol, f'{name}@x_grad'],
+        ])
+
+    @parameterized.expand([
+        [(2, 3, 4, 4)],
+        [(4, 8, 16, 16)],
+        [(8, 16, 64, 64)],
+    ])
+    def test_batch_norm2d(self, shape):
+        _x = np.random.normal(size=shape)
+        num_features = _x.shape[1]
+
+        tdtype = getattr(torch, DTYPE.value)
+        tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
+        tm = torch.nn.BatchNorm2d(num_features=num_features)
+        to = tm(tx)
+        self.helper._backward_torch(to)
+
+        x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
+        m = tensorgrad.nn.BatchNorm2d(num_features=num_features)
+        m.weight = tensorgrad.Tensor(tm.weight.detach().numpy(), dtype=DTYPE, device=DEVICE, name='w', requires_grad=True)
+        m.bias = tensorgrad.Tensor(tm.bias.detach().numpy(), dtype=DTYPE, device=DEVICE, name='b', requires_grad=True)
+        o = m(x)
+        self.helper._backward_tensorgrad(o)
+
+        tol = 1e-4
         name = f'{shape}'
         self.helper._check_tensors([
             [to, o, tol, f'{name}@forward'],

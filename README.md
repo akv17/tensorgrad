@@ -12,7 +12,7 @@ TODO:
 
 - [x] maxreduce
 - [x] conv2d
-- [] batchnorm2d
+- [x] batchnorm2d
 - [x] maxpool2d
 
 - [] multiattention
@@ -28,3 +28,4 @@ PROBLEMS:
 - Parameter type
 - numpy export for cpu ops is lame atm
 - save stuff for backward during forward
+- support multidim reductions (this will also speedup batchnorm2d)

@@ -49,10 +49,11 @@ class Linear(Module):
         return [self.weight, self.bias] if self.use_bias else [self.weight]
 
 
-class BatchNorm1D(Module):
+class BatchNorm1d(Module):
     """
     check 2d only
     check batch size > 1
+    accumulate running
 
     weight: [num_features,]
     bias: [num_features,]
@@ -72,10 +73,48 @@ class BatchNorm1D(Module):
         return out
 
     def forward(self, x):
-        mean = x.mean(dim=self.dim).unsqueeze(self.dim)
-        std = ((x - mean) ** 2).mean(0).unsqueeze(self.dim)
+        mean = x.mean(self.dim).unsqueeze(self.dim)
+        std = ((x - mean) ** 2).mean(self.dim).unsqueeze(self.dim)
         x_norm = (x - mean) / ((std + self.eps).sqrt())
         x = self.weight * x_norm + self.bias
+        return x
+
+    def parameters(self):
+        return [self.weight, self.bias] if self.use_bias else [self.weight]
+
+
+class BatchNorm2d(Module):
+    """
+    check 4d only
+    check batch size > 1
+    accumulate running
+
+    weight: [num_features,]
+    bias: [num_features,]
+    """
+    
+    def __init__(self, num_features, eps=1e-05, name=None):
+        self.num_features = num_features
+        self.eps = eps
+        self.name = name or f'BatchNorm2D@{id(self)}'
+
+        self.dim = 0
+        self.weight = None
+        self.bias = None
+
+    def __call__(self, *args, **kwargs):
+        out = self.forward(*args, **kwargs)
+        return out
+
+    def forward(self, x):
+        x = x.transpose(0, 2, 3, 1)
+        x_flat = x.reshape(x.shape[0] * x.shape[1] * x.shape[2], x.shape[3])
+        mean = x_flat.mean(self.dim).unsqueeze(self.dim)
+        std = ((x_flat - mean) ** 2).mean(self.dim).unsqueeze(self.dim)
+        x_norm = (x_flat - mean) / ((std + self.eps).sqrt())
+        x_flat = self.weight * x_norm + self.bias
+        x = x_flat.reshape(x.shape)
+        x = x.transpose(0, 3, 1, 2)
         return x
 
     def parameters(self):
