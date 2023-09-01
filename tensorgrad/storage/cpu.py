@@ -10,6 +10,13 @@ class CPUStorage:
         dtype = cls._map_dtype(dtype)
         data = np.array(data, dtype=dtype)
         return data
+    
+    @classmethod
+    def empty(cls, shape, dtype=None):
+        np = cls._get_numpy()
+        dtype = cls._map_dtype(dtype)
+        data = np.empty(shape, dtype=dtype)
+        return data
 
     @classmethod
     def zeros(cls, shape, dtype=None):
@@ -34,9 +41,9 @@ class CPUStorage:
 
     @classmethod
     def random_uniform(cls, a, b, shape, dtype=None):
-        dtype = dtype or DTYPE.FLOAT32
         np = cls._get_numpy()
-        data = np.random.uniform(a, b, size=shape)
+        dtype = cls._map_dtype(dtype)
+        data = np.random.uniform(a, b, size=shape).astype(dtype)
         return data
 
     @classmethod

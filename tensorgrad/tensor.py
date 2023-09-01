@@ -7,6 +7,13 @@ from .ops import OpDispatch
 
 class Tensor:
 
+    @classmethod
+    def empty(cls, shape, dtype=None, device=None, requires_grad=True):
+        storage = StorageDispatch.get(device)
+        data = storage.empty(shape, dtype=dtype)
+        tensor = cls(data=data, dtype=dtype, device=device, requires_grad=requires_grad)
+        return tensor
+
     def __init__(
         self,
         data,
@@ -227,7 +234,7 @@ class Tensor:
     def arange(self, n):
         data = self._storage.arange(n, dtype=self.dtype)
         return self._copy_from_data(data)
-    
+
     def tolist(self):
         return self.data.tolist()
     
