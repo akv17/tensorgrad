@@ -39,10 +39,9 @@ class Linear(Module):
         return out
 
     def forward(self, x):
-        if self.use_bias:
-            out = x.matmul(self.weight.transpose(1, 0)) + self.bias
-        else:
-            out = x.matmul(self.weight.transpose(1, 0))
+        w = self.weight.transpose(1, 0)
+        b = self.bias if self.bias is not None else None
+        out = x.matmul(w) + b if b is not None else x.matmul(w)
         return out
 
     def parameters(self):

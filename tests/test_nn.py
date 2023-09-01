@@ -19,6 +19,38 @@ class TestNN(unittest.TestCase):
 
     def setUp(self) -> None:
         self.helper = Helper()
+    
+    @parameterized.expand([
+        [(2, 8), 16, True],
+        [(2, 8), 16, False],
+        [(2, 8, 16), 32, True],
+        [(2, 8, 16), 32, False],
+        [(128, 256), 512, True],
+    ])
+    def test_linear(self, shape, out_features, bias):
+        _x = np.random.normal(size=shape)
+        in_features = _x.shape[-1]
+        
+        tdtype = getattr(torch, DTYPE.value)
+        tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
+        tm = torch.nn.Linear(in_features=in_features, out_features=out_features, bias=bias)
+        to = tm(tx)
+        self.helper._backward_torch(to)
+
+        x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
+        m = tensorgrad.nn.Linear(in_features=in_features, out_features=out_features, bias=bias)
+        m.weight = tensorgrad.Tensor(tm.weight.detach().numpy(), dtype=DTYPE, device=DEVICE, name='w', requires_grad=True)
+        if bias:
+            m.bias = tensorgrad.Tensor(tm.bias.detach().numpy(), dtype=DTYPE, device=DEVICE, name='b', requires_grad=True)
+        o = m(x)
+        self.helper._backward_tensorgrad(o)
+
+        tol = 1e-5
+        name = f'{shape}'
+        self.helper._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [tx.grad, x.grad, tol, f'{name}@x_grad'],
+        ])
 
     @parameterized.expand([
         [(2, 8)],
