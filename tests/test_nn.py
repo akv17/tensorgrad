@@ -195,9 +195,9 @@ class Helper(unittest.TestCase):
 
         x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
         m = getattr(tensorgrad.nn, module)(**tensorgrad_kwargs)
-        m.weight = tensorgrad.Tensor(tm.weight.detach().numpy(), dtype=DTYPE, device=DEVICE, name='w', requires_grad=True)
+        m.weight = tensorgrad.nn.Parameter(tm.weight.detach().numpy(), dtype=DTYPE, device=DEVICE, name='w', requires_grad=True)
         if tm.bias is not None:
-            m.bias = tensorgrad.Tensor(tm.bias.detach().numpy(), dtype=DTYPE, device=DEVICE, name='b', requires_grad=True)
+            m.bias = tensorgrad.nn.Parameter(tm.bias.detach().numpy(), dtype=DTYPE, device=DEVICE, name='b', requires_grad=True)
         o = m(x)
         self._backward_tensorgrad(o)
 

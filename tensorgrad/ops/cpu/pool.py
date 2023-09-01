@@ -59,7 +59,7 @@ class MaxPool2D(BaseOp):
 
         # w[..., i, :, j, :] -> window `i,j` of input which corresponds to pooled pixel 'i,j' of output.
         w = x.reshape(bs, ci, oh, kh, ow, kw)
-        # pool each window over dims `kh,kw` dims.
+        # pool each window over `kh,kw` dims.
         o = w.max((3, 5))
         return o
     

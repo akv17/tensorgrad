@@ -1,22 +1,5 @@
-from .interface import Module
-
-
-class Parameter:
-
-    def __init__(self, tensor):
-        self.tensor = tensor
-
-    def __repr__(self):
-        return f'Parameter<{self.tensor}>'
-
-    def __getattr__(self, name):
-        return getattr(self.tensor, name)
-
-    def update_(self, data):
-        self.tensor.data += data
-
-    def zero_grad_(self):
-        self.tensor.grad = self.tensor.grad.zeros_like()
+from .base import Module, Parameter
+from . import init
 
 
 class Linear(Module):
@@ -25,14 +8,15 @@ class Linear(Module):
     bias: [out,]
     """
     
-    def __init__(self, in_features, out_features, bias=True, name=None):
+    def __init__(self, in_features, out_features, bias=True, dtype=None, device=None):
+        super().__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.use_bias = bias
-        self.name = name or f'Linear@{id(self)}'
 
-        self.weight = None
-        self.bias = None
+        self.weight = Parameter.empty(shape=(self.out_features, self.in_features), dtype=dtype, device=device)
+        self.bias = Parameter.empty(shape=(self.out_features,), dtype=dtype, device=device) if bias else None
+        self.reset_parameters()
 
     def __call__(self, *args, **kwargs):
         out = self.forward(*args, **kwargs)
@@ -44,8 +28,10 @@ class Linear(Module):
         out = x.matmul(w) + b if b is not None else x.matmul(w)
         return out
 
-    def parameters(self):
-        return [self.weight, self.bias] if self.use_bias else [self.weight]
+    def reset_parameters(self):
+        init.uniform_fan_in(self.weight)
+        if self.bias is not None:
+            init.uniform_fan_in(self.bias)
 
 
 class Conv2d(Module):
@@ -64,7 +50,6 @@ class Conv2d(Module):
         stride=1,
         padding=0,
         bias=True,
-        name=None
     ):
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -72,7 +57,6 @@ class Conv2d(Module):
         self.stride = stride
         self.padding = padding
         self.use_bias = bias
-        self.name = name or f'Conv2d@{id(self)}'
 
         self._normalize_kernel_size()
         self._normalize_stride()
@@ -128,13 +112,11 @@ class _GeneralizedPool2d(Module):
         stride=None,
         padding=0,
         bias=True,
-        name=None
     ):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
         self.use_bias = bias
-        self.name = name or f'{self._OP.capitalize()}Pool2d@{id(self)}'
         self._op = f'{self._OP.lower()}_pool2d'
 
         self._normalize_kernel_size()
@@ -187,10 +169,9 @@ class BatchNorm1d(Module):
     bias: [num_features,]
     """
     
-    def __init__(self, num_features, eps=1e-05, name=None):
+    def __init__(self, num_features, eps=1e-05):
         self.num_features = num_features
         self.eps = eps
-        self.name = name or f'BatchNorm1D@{id(self)}'
 
         self.dim = 0
         self.weight = None
@@ -221,10 +202,9 @@ class BatchNorm2d(Module):
     bias: [num_features,]
     """
     
-    def __init__(self, num_features, eps=1e-05, name=None):
+    def __init__(self, num_features, eps=1e-05):
         self.num_features = num_features
         self.eps = eps
-        self.name = name or f'BatchNorm2D@{id(self)}'
 
         self.dim = 0
         self.weight = None
