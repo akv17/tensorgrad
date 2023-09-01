@@ -1,8 +1,4 @@
-import math
-
 from .interface import Module
-from ..tensor import Tensor
-from ..backend import BackendDispatch
 
 
 class Parameter:
@@ -24,55 +20,66 @@ class Parameter:
 
 
 class Linear(Module):
+    """
+    weight: [out, in]
+    bias: [out,]
+    """
     
-    def __init__(self, in_features, out_features, bias=True, name=None, backend=None, dtype=None):
+    def __init__(self, in_features, out_features, bias=True, name=None):
         self.in_features = in_features
         self.out_features = out_features
-        self.with_bias = bias
-        self.backend = backend
-        self.dtype = dtype
+        self.use_bias = bias
         self.name = name or f'Linear@{id(self)}'
-
-        self._backend = BackendDispatch.get(backend)
 
         self.weight = None
         self.bias = None
-        self.initialize()
 
     def __call__(self, *args, **kwargs):
         out = self.forward(*args, **kwargs)
         return out
 
     def forward(self, x):
-        if x.ndim < 2:
-            msg = f'Linear requires at least 2d input, got ndim={x.ndim}'
-            raise Exception(msg)
-        if self.with_bias:
+        if self.use_bias:
             out = x.matmul(self.weight.transpose(1, 0)) + self.bias
         else:
             out = x.matmul(self.weight.transpose(1, 0))
         return out
 
-    def initialize(self, weight=None, bias=None):
-        if weight is None:
-            k = math.sqrt(self.in_features)
-            w = self._backend.random_uniform(-k, k, shape=(self.out_features, self.in_features))
-        else:
-            w = weight
-        weight = Tensor(w, name=f'weight@{self.name}', backend=self.backend, dtype=self.dtype)
-        self.weight = weight
-        if self.with_bias:
-            if bias is None:
-                k = math.sqrt(self.in_features)
-                b = self._backend.random_uniform(-k, k, shape=(self.out_features,))
-            else:
-                b = bias
-            bias = Tensor(b, name=f'bias@{self.name}', backend=self.backend, dtype=self.dtype)
-            self.bias = bias
-        return self
+    def parameters(self):
+        return [self.weight, self.bias] if self.use_bias else [self.weight]
+
+
+class BatchNorm1D(Module):
+    """
+    check 2d only
+    check batch size > 1
+
+    weight: [num_features,]
+    bias: [num_features,]
+    """
+    
+    def __init__(self, num_features, eps=1e-05, name=None):
+        self.num_features = num_features
+        self.eps = eps
+        self.name = name or f'BatchNorm1D@{id(self)}'
+
+        self.dim = 0
+        self.weight = None
+        self.bias = None
+
+    def __call__(self, *args, **kwargs):
+        out = self.forward(*args, **kwargs)
+        return out
+
+    def forward(self, x):
+        mean = x.mean(dim=self.dim).unsqueeze(self.dim)
+        std = ((x - mean) ** 2).mean(0).unsqueeze(self.dim)
+        x_norm = (x - mean) / ((std + self.eps).sqrt())
+        x = self.weight * x_norm + self.bias
+        return x
 
     def parameters(self):
-        return [self.weight, self.bias] if self.with_bias else [self.weight]
+        return [self.weight, self.bias] if self.use_bias else [self.weight]
 
 
 class ReLU(Module):

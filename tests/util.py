@@ -3,6 +3,8 @@ import itertools
 
 import numpy as np
 
+from tensorgrad.const import DTYPE, DEVICE
+
 
 def require_torch():
     try:
@@ -34,8 +36,10 @@ def generate_cases(*args):
 
 def get_device():
     device = os.getenv('DEVICE', 'cpu')
-    return device
+    return {
+        'cpu': DEVICE.CPU
+    }[device]
 
 
 def get_dtype():
-    return 'float32'
+    return DTYPE.FLOAT32
