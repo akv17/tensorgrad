@@ -30,7 +30,7 @@ class TestNN(unittest.TestCase):
     def test_linear(self, shape, out_features, bias):
         kwargs = {'in_features': shape[-1], 'out_features': out_features, 'bias': bias}
         name = str(kwargs)
-        self.helper._test_module_with_weight_and_bias(
+        self.helper._test_weight_and_bias_module(
             test_name=name,
             module='Linear',
             input_shape=shape,
@@ -70,9 +70,69 @@ class TestNN(unittest.TestCase):
             'bias': bias,
         }
         name = str(kwargs)
-        self.helper._test_module_with_weight_and_bias(
+        self.helper._test_weight_and_bias_module(
             test_name=name,
             module='Conv2d',
+            input_shape=shape,
+            torch_kwargs=kwargs,
+            tensorgrad_kwargs=kwargs,
+            tol=1e-4,
+        )
+    
+    @parameterized.expand([
+        [(2, 3, 32, 32), 2, None, 0],
+        [(2, 3, 32, 32), 2, 2, 0],
+        [(2, 3, 32, 32), (2, 2), (2, 2), 0],
+        [(2, 3, 32, 32), 2, (2, 2), 1],
+        [(2, 3, 32, 32), 2, (2, 2), (1, 1)],
+        [(2, 3, 32, 32), (4, 4), 4, 0],
+    ])
+    def test_max_pool2d(
+        self,
+        shape,
+        kernel_size,
+        stride,
+        padding
+    ):
+        kwargs = {
+            'kernel_size': kernel_size,
+            'stride': stride,
+            'padding': padding,
+        }
+        name = str(kwargs)
+        self.helper._test_pooling_module(
+            test_name=name,
+            module='MaxPool2d',
+            input_shape=shape,
+            torch_kwargs=kwargs,
+            tensorgrad_kwargs=kwargs,
+            tol=1e-4,
+        )
+    
+    @parameterized.expand([
+        [(2, 3, 32, 32), 2, None, 0],
+        [(2, 3, 32, 32), 2, 2, 0],
+        [(2, 3, 32, 32), (2, 2), (2, 2), 0],
+        [(2, 3, 32, 32), 2, (2, 2), 1],
+        [(2, 3, 32, 32), 2, (2, 2), (1, 1)],
+        [(2, 3, 32, 32), (4, 4), 4, 0],
+    ])
+    def test_avg_pool2d(
+        self,
+        shape,
+        kernel_size,
+        stride,
+        padding
+    ):
+        kwargs = {
+            'kernel_size': kernel_size,
+            'stride': stride,
+            'padding': padding,
+        }
+        name = str(kwargs)
+        self.helper._test_pooling_module(
+            test_name=name,
+            module='AvgPool2d',
             input_shape=shape,
             torch_kwargs=kwargs,
             tensorgrad_kwargs=kwargs,
@@ -87,7 +147,7 @@ class TestNN(unittest.TestCase):
     def test_batch_norm1d(self, shape):
         kwargs = {'num_features': shape[-1]}
         name = str(kwargs)
-        self.helper._test_module_with_weight_and_bias(
+        self.helper._test_weight_and_bias_module(
             test_name=name,
             module='BatchNorm1d',
             input_shape=shape,
@@ -104,7 +164,7 @@ class TestNN(unittest.TestCase):
     def test_batch_norm2d(self, shape):
         kwargs = {'num_features': shape[1]}
         name = str(kwargs)
-        self.helper._test_module_with_weight_and_bias(
+        self.helper._test_weight_and_bias_module(
             test_name=name,
             module='BatchNorm2d',
             input_shape=shape,
@@ -116,7 +176,7 @@ class TestNN(unittest.TestCase):
 
 class Helper(unittest.TestCase):
 
-    def _test_module_with_weight_and_bias(
+    def _test_weight_and_bias_module(
         self,
         test_name,
         module,
@@ -150,6 +210,33 @@ class Helper(unittest.TestCase):
             self._check_tensors([
                 [tm.bias.grad, m.bias.grad, tol, f'{test_name}@b_grad'],
             ])
+    
+    def _test_pooling_module(
+        self,
+        test_name,
+        module,
+        input_shape,
+        torch_kwargs,
+        tensorgrad_kwargs,
+        tol=1e-5,
+    ):
+        _x = np.random.normal(size=input_shape)
+        
+        tdtype = getattr(torch, DTYPE.value)
+        tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
+        tm = getattr(torch.nn, module)(**torch_kwargs)
+        to = tm(tx)
+        self._backward_torch(to)
+
+        x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
+        m = getattr(tensorgrad.nn, module)(**tensorgrad_kwargs)
+        o = m(x)
+        self._backward_tensorgrad(o)
+
+        self._check_tensors([
+            [to, o, tol, f'{test_name}@forward'],
+            [tx.grad, x.grad, tol, f'{test_name}@x_grad'],
+        ])
 
     def _check_tensors(self, pairs):
         for tt, t, tol, name in pairs:

@@ -72,7 +72,7 @@ class Conv2d(Module):
         self.stride = stride
         self.padding = padding
         self.use_bias = bias
-        self.name = name or f'Linear@{id(self)}'
+        self.name = name or f'Conv2d@{id(self)}'
 
         self._normalize_kernel_size()
         self._normalize_stride()
@@ -113,6 +113,68 @@ class Conv2d(Module):
             self._padding = (0, 0)
         else:
             self._padding = p
+
+
+class _GeneralizedPool2d(Module):
+    """
+    maybe check params against each other.
+    """
+
+    _OP = None
+    
+    def __init__(
+        self,
+        kernel_size,
+        stride=None,
+        padding=0,
+        bias=True,
+        name=None
+    ):
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.use_bias = bias
+        self.name = name or f'{self._OP.capitalize()}Pool2d@{id(self)}'
+        self._op = f'{self._OP.lower()}_pool2d'
+
+        self._normalize_kernel_size()
+        self._normalize_stride()
+        self._normalize_padding()
+
+    def __call__(self, *args, **kwargs):
+        out = self.forward(*args, **kwargs)
+        return out
+
+    def forward(self, x):
+        op = getattr(x, self._op)
+        out = op(kernel_size=self._kernel_size, stride=self._stride, padding=self._padding)
+        return out
+
+    def parameters(self):
+        return []
+
+    def _normalize_kernel_size(self):
+        value = self.kernel_size
+        self._kernel_size = (value, value) if isinstance(value, int) else value
+    
+    def _normalize_stride(self):
+        value = self.stride
+        if value is None:
+            self._stride = self._kernel_size
+        else:
+            self._stride = (value, value) if isinstance(value, int) else value
+    
+    def _normalize_padding(self):
+        value = self.padding
+        self._padding = (value, value) if isinstance(value, int) else value
+
+
+class MaxPool2d(_GeneralizedPool2d):
+    _OP = 'max'
+
+
+class AvgPool2d(_GeneralizedPool2d):
+    _OP = 'avg'
 
 
 class BatchNorm1d(Module):
