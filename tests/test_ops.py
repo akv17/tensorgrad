@@ -423,11 +423,15 @@ class TestOps(unittest.TestCase):
             self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
     
     @parameterized.expand([
+        [2, (4, 4), (2, 2), 3, (2, 2), (0, 0)],
         [2, (8, 8), (2, 2), 3, (2, 2), (0, 0)],
-        [2, (8, 8), (2, 2), 3, (1, 2), (0, 0)],
-        [2, (8, 8), (2, 2), 3, (2, 1), (0, 0)],
         [2, (8, 8), (2, 2), 3, (2, 2), (1, 1)],
-        [2, (8, 8), (2, 2), 16, (2, 2), (1, 1)],
+        [2, (8, 8), (4, 4), 3, (4, 4), (0, 0)],
+        [2, (8, 8), (4, 4), 3, (4, 4), (2, 2)],
+        [2, (8, 8), (4, 4), 16, (4, 4), (0, 0)],
+        # trigger usage of slow implementation because of not evenly tiled input.
+        [2, (8, 8), (4, 4), 16, (2, 1), (1, 2)],
+
     ])
     def test_max_pool2d(
         self,

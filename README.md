@@ -27,3 +27,4 @@ PROBLEMS:
 - controlling requires_grad for nn.modules
 - Parameter type
 - numpy export for cpu ops is lame atm
+- save stuff for backward during forward

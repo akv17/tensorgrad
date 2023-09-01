@@ -1,5 +1,4 @@
-import numba
-import numpy as np
+import warnings
 
 from .util import get_numpy
 from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, conv2d_dilate
@@ -17,8 +16,87 @@ class MaxPool2D(BaseOp):
         self.stride = stride or self.kernel_size
         self.padding = padding or (0, 0)
         self.np = get_numpy()
+        
+        self._use_fast_impl = self._decide_use_fast_impl()
+        if not self._use_fast_impl:
+            msg = (
+                'MaxPool2D will use slow implementation because input cannot be evenly tiled with given parameters. '
+                'To use fast implementation consider choosing square kernel with stride of the same size and padding such that total input size is divisible by kernel size.'
+            )
+            warnings.warn(msg)
+            self._jit_backward_slow = self._jit_compile_backward_slow()
+            self._forward = self._forward_slow
+            self._backward = self._backward_slow
+        else:
+            self._forward = self._forward_fast
+            self._backward = self._backward_fast
     
     def forward(self):
+        o = self._forward()
+        self.out = self.x.from_data(o)
+        return self.out
+
+    def backward(self):
+        if not self.x.requires_grad:
+            return
+        g = self._backward()
+        self.x.grad += g
+
+    def _forward_fast(self):
+        np = self.np
+        x = self.x.data
+        ph, pw = self.padding
+        if ph > 0 or pw > 0:
+            x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)], constant_values=-np.inf)
+
+        ih, iw = x.shape[-2:]
+        bs = x.shape[0]
+        ci = x.shape[1]
+        kh, kw = self.kernel_size
+        sh, sw = self.stride
+        oh = ih // sh
+        ow = iw // sw
+
+        # w[..., i, :, j, :] -> window `i,j` of input which corresponds to pooled pixel 'i,j' of output.
+        w = x.reshape(bs, ci, oh, kh, ow, kw)
+        # pool each window over dims `kh,kw` dims.
+        o = w.max((3, 5))
+        return o
+    
+    def _backward_fast(self):
+        np = self.np
+        x = self.x.data
+        ph, pw = self.padding
+        if ph > 0 or pw > 0:
+            x = np.pad(x, [(0, 0), (0, 0), (ph, ph), (pw, pw)], constant_values=-np.inf)
+
+        ih, iw = x.shape[-2:]
+        bs = x.shape[0]
+        ci = x.shape[1]
+        kh, kw = self.kernel_size
+        sh, sw = self.stride
+        oh = ih // sh
+        ow = iw // sw
+        
+        # same windows as in forward.
+        w = x.reshape(bs, ci, oh, kh, ow, kw)
+        o = self.out.data
+        u = self.out.grad
+        # o[i, :, j, :] -> output pixel `i,j` which will be broadcasted to window `i,j` of input.
+        o = o.reshape(bs, ci, oh, 1, ow, 1)
+        # u[i, :, j, :] -> upstream pixel `i,j` which will be broadcasted to window `i,j` of input.
+        u = u.reshape(bs, ci, oh, 1, ow, 1)
+        # mask of pooled pixels into input windows.
+        m = w == o
+        m = m.astype('float32')
+        g = u * m
+        g = g.reshape(x.shape)
+
+        if ph > 0 or pw > 0:
+            g = g[..., ph:-ph, pw:-pw]
+        return g
+    
+    def _forward_slow(self):
         np = self.np
 
         x = self.x.data
@@ -32,18 +110,15 @@ class MaxPool2D(BaseOp):
         kh, kw = self.kernel_size
         sh, sw = self.stride
         oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
-        
+
         w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
         w = w.reshape(bs, ci, oh, ow, kh * kw)
         mask = np.argmax(w, -1)
-        self.mask = mask
+        self._mask = mask
         o = w.max(-1)
-        self.out = self.x.from_data(o)
-        return self.out
-    
-    def backward(self):
-        if not self.x.requires_grad:
-            return
+        return o
+
+    def _backward_slow(self):
         np = self.np
 
         x = self.x.data
@@ -60,35 +135,55 @@ class MaxPool2D(BaseOp):
 
         u = self.out.grad
         g = np.zeros_like(x)
-        # could not come up with pure numpy implementation thus isung numba.jit.
-        g = _jit_max_pool2d_backward(
+        # could not come up with pure numpy implementation thus isung numba.jit to speedup explicit scalar loop.
+        g = self._jit_backward_slow(
             g,
             u,
-            self.mask,
+            self._mask,
             bs, ci, oh, ow, kh, kw,sh,sw
         )
 
         if ph > 0 or pw > 0:
             g = g[..., ph:-ph, pw:-pw]
-        self.x.grad += g
+        return g
+    
+    def _decide_use_fast_impl(self):
+        ph, pw = self.padding
+        sh, sw = self.stride
+        ih, iw = self.x.shape[-2:]
+        kh, kw = self.kernel_size
+        ih += (ph * 2)
+        iw += (pw * 2)
+        kernel_flag = kh == kw == sh == sw
+        size_flag = (ih % kh == 0) and (iw % kw == 0)
+        flag = kernel_flag and size_flag
+        return flag
 
-
-@numba.jit(nopython=True)
-def _jit_max_pool2d_backward(g, u, m, bs, ci, oh, ow, kh, kw, sh, sw):
-    for b in range(bs):
-        for c in range(ci):
-            for oi in range(oh):
-                for oj in range(ow):
-                    # mask stores flat pooled index into kernel dims.
-                    # need to unravel it to 2d index into H, W input dims.
-                    xi_flat = m[b, c, oi, oj]
-                    xi = xi_flat // kh
-                    xj =  xi_flat % kw
-                    xi += oi * sh
-                    xj += oj * sw
-                    ui = u[b, c, oi, oj]
-                    g[b, c, xi, xj] += ui
-    return g
+    def _jit_compile_backward_slow(self):
+        try:
+            import numba
+        except ImportError:
+            msg = 'cannot import numba: numba is required to jit compile slow backward kernel of MaxPool2D.'
+            raise ImportError(msg)
+        
+        @numba.jit(nopython=True)
+        def _jit_max_pool2d_backward(g, u, m, bs, ci, oh, ow, kh, kw, sh, sw):
+            for b in range(bs):
+                for c in range(ci):
+                    for oi in range(oh):
+                        for oj in range(ow):
+                            # mask stores flat pooled index into kernel dims.
+                            # need to unravel it to 2d index into H, W input dims.
+                            xi_flat = m[b, c, oi, oj]
+                            xi = xi_flat // kh
+                            xj =  xi_flat % kw
+                            xi += oi * sh
+                            xj += oj * sw
+                            ui = u[b, c, oi, oj]
+                            g[b, c, xi, xj] += ui
+            return g
+        
+        return _jit_max_pool2d_backward
 
 
 @OpDispatch.register(OP.AVG_POOL2D, DEVICE.CPU)
