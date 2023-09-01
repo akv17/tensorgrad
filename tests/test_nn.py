@@ -50,7 +50,13 @@ class TestNN(unittest.TestCase):
         self.helper._check_tensors([
             [to, o, tol, f'{name}@forward'],
             [tx.grad, x.grad, tol, f'{name}@x_grad'],
+            [tm.weight.grad, m.weight.grad, tol, f'{name}@w_grad'],
         ])
+        if bias:
+            self.helper._check_tensors([
+                [tm.bias.grad, m.bias.grad, tol, f'{name}@b_grad'],
+            ])
+
 
     @parameterized.expand([
         [(2, 8)],
@@ -79,6 +85,8 @@ class TestNN(unittest.TestCase):
         self.helper._check_tensors([
             [to, o, tol, f'{name}@forward'],
             [tx.grad, x.grad, tol, f'{name}@x_grad'],
+            [tm.weight.grad, m.weight.grad, tol, f'{name}@w_grad'],
+            [tm.bias.grad, m.bias.grad, tol, f'{name}@b_grad'],
         ])
 
     @parameterized.expand([
@@ -108,6 +116,8 @@ class TestNN(unittest.TestCase):
         self.helper._check_tensors([
             [to, o, tol, f'{name}@forward'],
             [tx.grad, x.grad, tol, f'{name}@x_grad'],
+            [tm.weight.grad, m.weight.grad, tol, f'{name}@w_grad'],
+            [tm.bias.grad, m.bias.grad, tol, f'{name}@b_grad'],
         ])
 
 
