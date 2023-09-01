@@ -23,9 +23,16 @@ TODO:
     [] custom checks for each op
 
 PROBLEMS:
-- universal data transfer via .numpy()
-- controlling requires_grad for nn.modules
-- Parameter type
+- how to control requires_grad for outputs of ops
 - numpy export for cpu ops is lame atm
 - save stuff for backward during forward
 - support multidim reductions (this will also speedup batchnorm2d)
+
+TORCH API NOT IMPLEMENTED YET:
+- Parameter type
+- auto detection of Module params
+- auto naming of Module params
+- no_grad
+- train / eval
+- save
+- load
