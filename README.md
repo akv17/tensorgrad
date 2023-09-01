@@ -29,10 +29,10 @@ PROBLEMS:
 - support multidim reductions (this will also speedup batchnorm2d)
 
 TORCH API NOT IMPLEMENTED YET:
-- Parameter type
-- auto detection of Module params
-- auto naming of Module params
-- no_grad
-- train / eval
-- save
-- load
+- [x] Parameter type
+- [] auto detection of Module params
+- [] auto naming of Module params
+- [] no_grad
+- [] train / eval
+- [] save
+- [] load
