@@ -7,14 +7,12 @@ def zeros(tensor):
     storage = StorageDispatch.get(tensor.device)
     data = storage.zeros(tensor.shape, dtype=tensor.dtype)
     tensor.data = data
-    return data
 
 
 def ones(tensor):
     storage = StorageDispatch.get(tensor.device)
     data = storage.ones(tensor.shape, dtype=tensor.dtype)
     tensor.data = data
-    return data
 
 
 def uniform_fan_in(tensor):

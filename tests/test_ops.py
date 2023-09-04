@@ -191,6 +191,38 @@ class TestOps(unittest.TestCase):
         self.helper._test_unary_op(shape=shape, method='permute', args=(dims,))
 
     @parameterized.expand([
+        [[(4, 8), (2, 8)], 0],
+        [[(4, 8), (4, 2)], 1],
+        [[(4, 8), (4, 2)], -1],
+        [[(4, 8, 16), (1, 8, 16)], 0],
+        [[(4, 2, 16), (4, 6, 16)], 1],
+        [[(4, 8, 6), (4, 8, 10)], 2],
+        [[(4, 8, 16, 32), (1, 8, 16, 32)], 0],
+        [[(4, 2, 16, 32), (4, 8, 16, 32)], 1],
+        [[(4, 8, 2, 32), (4, 8, 16, 32)], 2],
+        [[(4, 8, 16, 32), (4, 8, 16, 2)], 3],
+        [[(4, 8, 16, 32)], -1],
+    ])
+    def test_concat(self, shapes, dim):
+        _x = [np.random.normal(size=s) for s in shapes]
+        
+        x = [tensorgrad.Tensor(xi, device=DEVICE, dtype=DTYPE, requires_grad=True) for xi in _x]
+        o = x[0].concat(x[1:], dim=dim)
+        self.helper._backward_tensorgrad(o)
+        if RENDER:
+            o.render()
+
+        tdtype = getattr(torch, DTYPE.value)
+        tx = [torch.tensor(xi, requires_grad=True, dtype=tdtype) for xi in _x]
+        to = torch.concat(tx, dim)
+        self.helper._backward_torch(to)
+
+        name = f'{shapes}::{dim}'
+        self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@forward')
+        for txi, xi in zip(tx, x):
+            self.assertTrue(check_tensors(txi.grad.tolist(), xi.grad.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@x_grad')
+
+    @parameterized.expand([
         [(3, 4), 0],
         [(3, 4), (slice(None), 0)],
         [(3, 4), (0, slice(None))],

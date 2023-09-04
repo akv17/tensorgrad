@@ -35,6 +35,7 @@ class OP(str, Enum):
     RESHAPE = 'reshape'
     PERMUTE = 'permute'
     SELECT = 'select'
+    CONCAT = 'concat'
 
     RELU = 'relu'
     SIGMOID = 'sigmoid'

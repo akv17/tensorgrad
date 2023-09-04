@@ -3,16 +3,20 @@ class OpDispatch:
 
     @classmethod
     def execute(cls, op, *args, **kwargs):
-        device = args[0].device
+        inputs = args
+        inputs = cls._unpack_inputs_maybe(inputs)
+        device = inputs[0].device
+        requires_grad = any(i.requires_grad for i in inputs)
         key = (op, device)
         if key not in cls._DISPATCH:
             msg = f'unknown op: {key}'
             raise KeyError(msg)
         op = cls._DISPATCH[key]
+        # not passing unpacked inputs because op requires original args passed (e.g. concat requires stacked inputs)
         op = op(*args, **kwargs)
         out = op.forward()
-        out.requires_grad = any(a.requires_grad for a in args)
-        out._children = args
+        out.requires_grad = requires_grad
+        out._children = inputs
         out._op = op
         return out
 
@@ -27,3 +31,13 @@ class OpDispatch:
             cls._DISPATCH[key] = impl
             return impl
         return _deco
+
+    @classmethod
+    def _unpack_inputs_maybe(cls, inputs):
+        # not using any fancy iterators not to record select ops when indexing into inputs.
+        # may also be solved via running in no_grad mode.
+        accum = []
+        for i in inputs:
+            i = [i] if not isinstance(i, (list, tuple)) else i
+            accum.extend(i)
+        return accum

@@ -174,6 +174,15 @@ class Tensor:
         out = OpDispatch.execute(OP.UNSQUEEZE, self, dim=dim)
         return out
     
+    def concat(self, tensors, dim):
+        tensors = [self, *tensors]
+        out = OpDispatch.execute(OP.CONCAT, tensors, dim=dim)
+        return out
+    
+    def cat(self, tensors, dim):
+        out = self.concat(tensors, dim=dim)
+        return out
+
     def matmul(self, other):
         out = OpDispatch.execute(OP.MATMUL, self, other)
         return out

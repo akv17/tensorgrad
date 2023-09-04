@@ -99,3 +99,31 @@ class Select(BaseOp):
             grad = np.zeros_like(self.x.data)
             grad[self.slice_] = self.out.grad
             self.x.grad += grad
+
+
+@OpDispatch.register(OP.CONCAT, DEVICE.CPU)
+class Concat(BaseOp):
+
+    def __init__(self, x, *, dim):
+        self.x = x
+        self.dim = dim
+        self.np = get_numpy()
+    
+    def forward(self):
+        data = [xi.data for xi in self.x]
+        x = self.np.concatenate(data, axis=self.dim)
+        head = self.x[0]
+        self.out = head.from_data(x)
+        return self.out
+    
+    def backward(self):
+        sections = []
+        idx = 0
+        for xi in self.x[:-1]:
+            idx += xi.shape[self.dim]
+            sections.append(idx)
+
+        g = self.np.split(self.out.grad, sections, axis=self.dim)
+        for xi, gi in zip(self.x, g):
+            if xi.requires_grad:
+                xi.grad += gi
