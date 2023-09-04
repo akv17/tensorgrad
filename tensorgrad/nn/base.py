@@ -40,5 +40,8 @@ class Module:
     @abstractmethod
     def forward(self, *args, **kwargs): pass
 
+    @abstractmethod
+    def init_from_torch(self, module): pass
+
     def parameters(self):
         return self._parameters.copy()

@@ -18,15 +18,24 @@ class Linear(Module):
         self.bias = Parameter.empty(shape=(self.out_features,), dtype=dtype, device=device) if bias else None
         self.reset_parameters()
 
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
-
     def forward(self, x):
         w = self.weight.transpose(1, 0)
         b = self.bias if self.bias is not None else None
         out = x.matmul(w) + b if b is not None else x.matmul(w)
         return out
+
+    def init_from_torch(self, module):
+        self.weight = Parameter(
+            module.weight.detach().cpu().numpy(),
+            dtype=self.weight.dtype,
+            device=self.weight.device
+        )
+        if module.bias is not None:
+            self.bias = Parameter(
+                module.bias.detach().cpu().numpy(),
+                dtype=self.bias.dtype,
+                device=self.bias.device
+            )
 
     def reset_parameters(self):
         init.uniform_fan_in(self.weight)
@@ -50,7 +59,10 @@ class Conv2d(Module):
         stride=1,
         padding=0,
         bias=True,
+        dtype=None,
+        device=None,
     ):
+        super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
@@ -62,19 +74,30 @@ class Conv2d(Module):
         self._normalize_stride()
         self._normalize_padding()
 
-        self.weight = None
-        self.bias = None
-
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
+        self.weight = Parameter.empty((self.out_channels, self.in_channels, *self._kernel_size), dtype=dtype, device=device)
+        self.bias = Parameter.empty((self.out_channels,), dtype=dtype, device=device) if bias else None
 
     def forward(self, x):
         out = x.conv2d(kernel=self.weight, bias=self.bias, stride=self._stride, padding=self._padding)
         return out
 
-    def parameters(self):
-        return [self.weight, self.bias] if self.use_bias else [self.weight]
+    def init_from_torch(self, module):
+        self.weight = Parameter(
+            module.weight.detach().cpu().numpy(),
+            dtype=self.weight.dtype,
+            device=self.weight.device
+        )
+        if module.bias is not None:
+            self.bias = Parameter(
+                module.bias.detach().cpu().numpy(),
+                dtype=self.bias.dtype,
+                device=self.bias.device
+            )
+    
+    def reset_parameters(self):
+        init.uniform_fan_in(self.weight)
+        if self.bias is not None:
+            init.uniform_fan_in(self.bias)
 
     def _normalize_kernel_size(self):
         ks = self.kernel_size
@@ -111,29 +134,27 @@ class _GeneralizedPool2d(Module):
         kernel_size,
         stride=None,
         padding=0,
-        bias=True,
     ):
+        super().__init__()
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-        self.use_bias = bias
         self._op = f'{self._OP.lower()}_pool2d'
 
         self._normalize_kernel_size()
         self._normalize_stride()
         self._normalize_padding()
 
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
-
     def forward(self, x):
         op = getattr(x, self._op)
         out = op(kernel_size=self._kernel_size, stride=self._stride, padding=self._padding)
         return out
 
-    def parameters(self):
-        return []
+    def init_from_torch(self, module):
+        pass
+    
+    def reset_parameters(self):
+        pass
 
     def _normalize_kernel_size(self):
         value = self.kernel_size
@@ -169,17 +190,14 @@ class BatchNorm1d(Module):
     bias: [num_features,]
     """
     
-    def __init__(self, num_features, eps=1e-05):
+    def __init__(self, num_features, eps=1e-05, dtype=None, device=None):
+        super().__init__()
         self.num_features = num_features
         self.eps = eps
 
         self.dim = 0
-        self.weight = None
-        self.bias = None
-
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
+        self.weight = Parameter.empty((self.num_features,), dtype=dtype, device=device)
+        self.bias = Parameter.empty((self.num_features,), dtype=dtype, device=device)
 
     def forward(self, x):
         mean = x.mean(self.dim).unsqueeze(self.dim)
@@ -188,8 +206,21 @@ class BatchNorm1d(Module):
         x = self.weight * x_norm + self.bias
         return x
 
-    def parameters(self):
-        return [self.weight, self.bias] if self.use_bias else [self.weight]
+    def init_from_torch(self, module):
+        self.weight = Parameter(
+            module.weight.detach().cpu().numpy(),
+            dtype=self.weight.dtype,
+            device=self.weight.device
+        )
+        self.bias = Parameter(
+            module.bias.detach().cpu().numpy(),
+            dtype=self.bias.dtype,
+            device=self.bias.device
+        )
+    
+    def reset_parameters(self):
+        init.ones(self.weight)
+        init.zeros(self.bias)
 
 
 class BatchNorm2d(Module):
@@ -202,17 +233,14 @@ class BatchNorm2d(Module):
     bias: [num_features,]
     """
     
-    def __init__(self, num_features, eps=1e-05):
+    def __init__(self, num_features, eps=1e-05, dtype=None, device=None):
+        super().__init__()
         self.num_features = num_features
         self.eps = eps
 
         self.dim = 0
-        self.weight = None
-        self.bias = None
-
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
+        self.weight = Parameter.empty((self.num_features,), dtype=dtype, device=device)
+        self.bias = Parameter.empty((self.num_features,), dtype=dtype, device=device)
 
     def forward(self, x):
         x = x.transpose(0, 2, 3, 1)
@@ -225,15 +253,24 @@ class BatchNorm2d(Module):
         x = x.transpose(0, 3, 1, 2)
         return x
 
-    def parameters(self):
-        return [self.weight, self.bias] if self.use_bias else [self.weight]
+    def init_from_torch(self, module):
+        self.weight = Parameter(
+            module.weight.detach().cpu().numpy(),
+            dtype=self.weight.dtype,
+            device=self.weight.device
+        )
+        self.bias = Parameter(
+            module.bias.detach().cpu().numpy(),
+            dtype=self.bias.dtype,
+            device=self.bias.device
+        )
+    
+    def reset_parameters(self):
+        init.ones(self.weight)
+        init.zeros(self.bias)
 
 
 class ReLU(Module):
-
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
     
     def forward(self, x):
         x = x.relu()
@@ -248,10 +285,6 @@ class ReLU(Module):
 
 class Identity(Module):
 
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
-    
     def forward(self, x):
         return x
     
@@ -264,10 +297,6 @@ class Identity(Module):
 
 class Sigmoid(Module):
 
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
-    
     def forward(self, x):
         x = x.sigmoid()
         return x
