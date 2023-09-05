@@ -27,7 +27,7 @@ PROBLEMS:
 - how to control requires_grad for outputs of ops
 - numpy export for cpu ops is lame atm
 - save stuff for backward during forward
-- support multidim reductions (this will also speedup batchnorm2d)
+- [x] support multidim reductions (this will also speedup batchnorm2d)
 
 TORCH API NOT IMPLEMENTED YET:
 - [x] Parameter type
