@@ -49,3 +49,23 @@ class Log(UnaryOp):
     def backward(self):
         if self.x.requires_grad:
             self.x.grad += 1.0 / self.x.data * self.out.grad
+
+
+@OpDispatch.register(OP.MASKED_FILL, DEVICE.CPU)
+class MaskedFill(BaseOp):
+
+    def __init__(self, x, *, mask, value):
+        self.x = x
+        self.mask = mask
+        self.value = value
+
+    def forward(self):
+        data = self.x.data
+        data[self.mask.data] = self.value
+        self.x.data = data
+        self.out = self.x
+        return self.out
+    
+    def backward(self):
+        # this op does not have a gradient.
+        pass

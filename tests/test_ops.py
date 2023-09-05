@@ -1,4 +1,5 @@
 import os
+import math
 import unittest
 
 import numpy as np
@@ -238,6 +239,31 @@ class TestOps(unittest.TestCase):
     ])
     def test_select(self, shape, slice_):
         self.helper._test_unary_op(shape=shape, method='__getitem__', args=(slice_,))
+
+    @parameterized.expand([
+        [(4,), 0.0],
+        [(4,), -math.inf],
+        [(2, 4), 0.0],
+        [(2, 4), -math.inf],
+        [(2, 4, 8), 0.0],
+        [(2, 4, 8), -math.inf],
+    ])
+    def test_masked_fill_(self, shape, value):
+        _x = np.random.normal(0.0, 1.0, size=shape)
+        _m = np.random.randint(0, 2, size=_x.shape).astype('bool')
+        
+        x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=False, name='x')
+        m = tensorgrad.Tensor(_m, device=DEVICE, dtype=DTYPE.BOOL, requires_grad=False, name='m')
+        x = x.masked_fill_(m, value)
+
+        tdtype = getattr(torch, x.dtype.value)
+        tx = torch.tensor(_x, requires_grad=False, dtype=tdtype)
+        tm = torch.tensor(_m, requires_grad=False, dtype=torch.bool)
+        tx = tx.masked_fill_(tm, value)
+
+        # this op does not have backward.
+        name = f'{shape}::{value}'
+        self.assertTrue(check_tensors(tx.tolist(), x.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@forward')
 
     @parameterized.expand([
         [(128,), None],

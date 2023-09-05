@@ -309,8 +309,9 @@ class MultiheadAttention(Module):
         qk /= math.sqrt(self.head_dim)
         
         if attn_mask is not None:
+            attn_mask_bool = attn_mask
             attn_mask = attn_mask.float()
-            attn_mask.data[attn_mask.data == 1.0] = -math.inf
+            attn_mask.masked_fill_(attn_mask_bool, -math.inf)
             if attn_mask.ndim == 2:
                 # broadcast over `batch_size` and `num_heads`.
                 attn_mask = attn_mask.reshape(1, 1, *attn_mask.shape)

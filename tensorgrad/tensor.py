@@ -183,6 +183,10 @@ class Tensor:
         out = self.concat(tensors, dim=dim)
         return out
 
+    def masked_fill_(self, mask, value):
+        out = OpDispatch.execute(OP.MASKED_FILL, self, mask=mask, value=value)
+        return out
+
     def matmul(self, other):
         out = OpDispatch.execute(OP.MATMUL, self, other)
         return out
