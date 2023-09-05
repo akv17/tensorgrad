@@ -8,9 +8,31 @@ from .ops import OpDispatch
 class Tensor:
 
     @classmethod
-    def empty(cls, shape, dtype=None, device=None, requires_grad=True):
+    def empty(cls, *shape, dtype=None, device=None, requires_grad=True):
+        tensor = cls._factory('empty', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad)
+        return tensor
+    
+    @classmethod
+    def zeros(cls, *shape, dtype=None, device=None, requires_grad=True):
+        tensor = cls._factory('zeros', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad)
+        return tensor
+    
+    @classmethod
+    def ones(cls, *shape, dtype=None, device=None, requires_grad=True):
+        tensor = cls._factory('ones', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad)
+        return tensor
+    
+    @classmethod
+    def rand(cls, *shape, dtype=None, device=None, requires_grad=True):
+        kwargs = {'a': 0.0, 'b': 1.0}
+        tensor = cls._factory('random_uniform', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
+        return tensor
+
+    @classmethod
+    def _factory(cls, method, shape, dtype, device, requires_grad, **kwargs):
+        shape = shape[0] if len(shape) == 1 and isinstance(shape[0], (tuple, list)) else shape
         storage = StorageDispatch.get(device)
-        data = storage.empty(shape, dtype=dtype)
+        data = getattr(storage, method)(shape=shape, dtype=dtype, **kwargs)
         tensor = cls(data=data, dtype=dtype, device=device, requires_grad=requires_grad)
         return tensor
 
@@ -232,16 +254,8 @@ class Tensor:
         data = self._storage.zeros(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
-    def zeros(self, shape):
-        data = self._storage.zeros(shape, dtype=self.dtype)
-        return self._copy_from_data(data)
-    
     def ones_like(self):
         data = self._storage.ones(self.data.shape, dtype=self.dtype)
-        return self._copy_from_data(data)
-    
-    def ones(self, shape):
-        data = self._storage.ones(shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
     def float(self):

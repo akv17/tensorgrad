@@ -15,8 +15,8 @@ class Linear(Module):
         self.out_features = out_features
         self.use_bias = bias
 
-        self.weight = Parameter.empty(shape=(self.out_features, self.in_features), dtype=dtype, device=device)
-        self.bias = Parameter.empty(shape=(self.out_features,), dtype=dtype, device=device) if bias else None
+        self.weight = Parameter.empty((self.out_features, self.in_features), dtype=dtype, device=device)
+        self.bias = Parameter.empty((self.out_features,), dtype=dtype, device=device) if bias else None
         self.reset_parameters()
 
     def forward(self, x):
@@ -289,7 +289,6 @@ class MultiheadAttention(Module):
         self.k_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
         self.v_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
         self.o_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
-        self.bias = Parameter.empty((1,), dtype=dtype, device=device)
     
     def forward(self, query, key, value, attn_mask=None):
         q = query.matmul(self.q_weight.transpose(1, 0))
