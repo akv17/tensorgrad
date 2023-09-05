@@ -174,46 +174,25 @@ class TestNN(unittest.TestCase):
         )
     
     @parameterized.expand([
-        [(2, 4, 8), 1],
-        [(2, 4, 8), 2],
-        [(2, 4, 8), 4],
-        [(8, 32, 128), 8],
+        [(2, 4, 8), (2, 4, 8), 1, None],
+        [(2, 4, 8), (2, 4, 8), 2, None],
+        [(2, 4, 8), (2, 4, 8), 2, 2],
+        [(2, 4, 8), (2, 4, 8), 2, 3],
+
+        [(2, 4, 8), (2, 6, 8), 1, None],
+        [(2, 4, 8), (2, 6, 8), 2, None],
+        [(2, 4, 8), (2, 6, 8), 2, 2],
+        [(2, 4, 8), (2, 6, 8), 2, 3],
+
+        [(8, 32, 128), (8, 32, 128), 8, 3],
     ])
-    def test_multihead_attention(self, shape, num_heads):
-        embed_dim = shape[-1]
-        _q = np.random.normal(size=shape)
-        _k = np.random.normal(size=shape)
-        _v = np.random.normal(size=shape)
-
-        tdtype = getattr(torch, DTYPE.value)
-        tq = torch.tensor(_q, dtype=tdtype, requires_grad=True)
-        tk = torch.tensor(_k, dtype=tdtype, requires_grad=True)
-        tv = torch.tensor(_v, dtype=tdtype, requires_grad=True)
-        tm = torch.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, batch_first=True, bias=False)
-        to, _ = tm(tq, tk, tv)
-        self.helper._backward_torch(to)
-
-        q = tensorgrad.Tensor(_q, dtype=DTYPE, device=DEVICE, requires_grad=True)
-        k = tensorgrad.Tensor(_k, dtype=DTYPE, device=DEVICE, requires_grad=True)
-        v = tensorgrad.Tensor(_v, dtype=DTYPE, device=DEVICE, requires_grad=True)
-        m = tensorgrad.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads)
-        m.init_from_torch(tm)
-        o = m(q, k, v)
-        self.helper._backward_tensorgrad(o)
-
-        name = f'{shape}::{num_heads}'
-        tol = 1e-4
-        self.helper._check_tensors([
-            [to, o, tol, f'{name}@forward'],
-            [tq.grad, q.grad, tol, f'{name}@q_grad'],
-            [tk.grad, k.grad, tol, f'{name}@k_grad'],
-            [tv.grad, v.grad, tol, f'{name}@v_grad'],
-            [tm.in_proj_weight.grad.chunk(3)[0], m.q_weight.grad, tol, f'{name}@q_w_grad'],
-            [tm.in_proj_weight.grad.chunk(3)[1], m.k_weight.grad, tol, f'{name}@k_w_grad'],
-            [tm.in_proj_weight.grad.chunk(3)[2], m.v_weight.grad, tol, f'{name}@v_w_grad'],
-            [tm.out_proj.weight.grad, m.o_weight.grad, tol, f'{name}@o_w_grad'],
-        ])
-
+    def test_multihead_attention(self, q_shape, kv_shape, num_heads, attn_mask_dim):
+        self.helper._test_multihead_attention(
+            q_shape=q_shape,
+            kv_shape=kv_shape,
+            num_heads=num_heads,
+            attn_mask_dim=attn_mask_dim
+        )
 
 
 class Helper(unittest.TestCase):
@@ -276,6 +255,61 @@ class Helper(unittest.TestCase):
         self._check_tensors([
             [to, o, tol, f'{test_name}@forward'],
             [tx.grad, x.grad, tol, f'{test_name}@x_grad'],
+        ])
+
+    def _test_multihead_attention(self, q_shape, kv_shape, num_heads, attn_mask_dim):
+        batch_size, q_seq_len, embed_dim = q_shape
+        batch_size, kv_seq_len, embed_dim = kv_shape
+        _q = np.random.normal(size=q_shape)
+        _k = np.random.normal(size=kv_shape)
+        _v = np.random.normal(size=kv_shape)
+        if attn_mask_dim is not None:
+            _attn_mask = np.ones((q_seq_len, kv_seq_len))
+            _attn_mask = np.triu(_attn_mask, 1).astype('bool')
+            if attn_mask_dim == 3:
+                _attn_mask = np.expand_dims(_attn_mask, 0)
+                _attn_mask = np.tile(_attn_mask, [batch_size, 1, 1])
+        else:
+            _attn_mask = None
+
+        tdtype = getattr(torch, DTYPE.value)
+        tq = torch.tensor(_q, dtype=tdtype, requires_grad=True)
+        tk = torch.tensor(_k, dtype=tdtype, requires_grad=True)
+        tv = torch.tensor(_v, dtype=tdtype, requires_grad=True)
+        # reshape 3d mask to the shape expected by torch which is (bs*num_heads, q_seq_len, kv_seq_len).
+        # this way torch allows to specify unique mask per head.
+        # tensorgrad doesn't allow that and broadcasts the same mask over all heads.
+        _tattn_mask = _attn_mask
+        if _attn_mask is not None:
+            if _attn_mask.ndim == 3:
+                _tattn_mask = np.tile(_attn_mask, [num_heads, 1, 1])
+            else:
+                _tattn_mask = _attn_mask
+        tattn_mask = torch.tensor(_tattn_mask, dtype=torch.bool, requires_grad=False) if _tattn_mask is not None else None
+        tm = torch.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, batch_first=True, bias=False)
+        to, _ = tm(tq, tk, tv, attn_mask=tattn_mask)
+        self._backward_torch(to)
+
+        q = tensorgrad.Tensor(_q, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        k = tensorgrad.Tensor(_k, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        v = tensorgrad.Tensor(_v, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        attn_mask = tensorgrad.Tensor(_attn_mask, dtype=DTYPE.BOOL, device=DEVICE, requires_grad=False) if _attn_mask is not None else None
+        m = tensorgrad.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads)
+        m.init_from_torch(tm)
+        o = m(q, k, v, attn_mask=attn_mask)
+        self._backward_tensorgrad(o)
+
+        name = f'{q_shape}::{num_heads}'
+        tol = 1e-4
+        self._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [tq.grad, q.grad, tol, f'{name}@q_grad'],
+            [tk.grad, k.grad, tol, f'{name}@k_grad'],
+            [tv.grad, v.grad, tol, f'{name}@v_grad'],
+            [tm.in_proj_weight.grad.chunk(3)[0], m.q_weight.grad, tol, f'{name}@q_w_grad'],
+            [tm.in_proj_weight.grad.chunk(3)[1], m.k_weight.grad, tol, f'{name}@k_w_grad'],
+            [tm.in_proj_weight.grad.chunk(3)[2], m.v_weight.grad, tol, f'{name}@v_w_grad'],
+            [tm.out_proj.weight.grad, m.o_weight.grad, tol, f'{name}@o_w_grad'],
         ])
 
     def _check_tensors(self, pairs):

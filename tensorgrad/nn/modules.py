@@ -272,6 +272,9 @@ class BatchNorm2d(Module):
 
 
 class MultiheadAttention(Module):
+    """
+    if attn_mask 3d assumed shape is (bs, sl, sl) so the same mask is broadcasted over all the heads.
+    """
 
     def __init__(self, embed_dim, num_heads, dtype=None, device=None):
         super().__init__()
@@ -288,26 +291,38 @@ class MultiheadAttention(Module):
         self.o_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
         self.bias = Parameter.empty((1,), dtype=dtype, device=device)
     
-    def forward(self, query, key, value):
+    def forward(self, query, key, value, attn_mask=None):
         q = query.matmul(self.q_weight.transpose(1, 0))
         k = key.matmul(self.k_weight.transpose(1, 0))
         v = value.matmul(self.v_weight.transpose(1, 0))
 
-        bs, sl = q.shape[:2]
-        q = q.reshape(bs, sl, self.num_heads, self.head_dim)
+        bs, q_sl = q.shape[:2]
+        bs, kv_sl = k.shape[:2]
+        q = q.reshape(bs, q_sl, self.num_heads, self.head_dim)
         q = q.permute(0, 2, 1, 3)
-        k = k.reshape(bs, sl, self.num_heads, self.head_dim)
+        k = k.reshape(bs, kv_sl, self.num_heads, self.head_dim)
         k = k.permute(0, 2, 1, 3)
-        v = v.reshape(bs, sl, self.num_heads, self.head_dim)
+        v = v.reshape(bs, kv_sl, self.num_heads, self.head_dim)
         v = v.permute(0, 2, 1, 3)
 
         qk = q.matmul(k.permute(0, 1, 3, 2))
         qk /= math.sqrt(self.head_dim)
+        
+        if attn_mask is not None:
+            attn_mask = attn_mask.float()
+            attn_mask.data[attn_mask.data == 1.0] = -math.inf
+            if attn_mask.ndim == 2:
+                # broadcast over `batch_size` and `num_heads`.
+                attn_mask = attn_mask.reshape(1, 1, *attn_mask.shape)
+            elif attn_mask.ndim == 3:
+                # broadcast over `num_heads`.
+                attn_mask = attn_mask.unsqueeze(1)
+            qk += attn_mask
         qk = qk.softmax(-1)
 
         attn = qk.matmul(v)
         attn = attn.permute(0, 2, 1, 3)
-        attn = attn.reshape(bs, sl, self.num_heads * self.head_dim)
+        attn = attn.reshape(bs, q_sl, self.num_heads * self.head_dim)
 
         out = attn.matmul(self.o_weight.transpose(1, 0))
         self.out = out
