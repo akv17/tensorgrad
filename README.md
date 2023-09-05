@@ -15,8 +15,9 @@ TODO:
 - [x] batchnorm2d
 - [x] maxpool2d
 
-- [] multiattention
+- [x] multiattention
 - [] layernorm
+- [] embedding
 
 [] arg checks
     [] OpDispatch
