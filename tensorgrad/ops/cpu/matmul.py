@@ -1,4 +1,4 @@
-from .util import get_numpy
+from .util.np import NumpyNamespaceProvider
 from ..stubs import BinaryOp
 from ..dispatch import OpDispatch
 from ..util import accumulate_broadcasted_grad
@@ -6,11 +6,7 @@ from ...const import OP, DEVICE
 
 
 @OpDispatch.register(OP.MATMUL, DEVICE.CPU)
-class Matmul(BinaryOp):
-
-    def __init__(self, a, b):
-        super().__init__(a=a, b=b)
-        self.np = get_numpy()
+class Matmul(BinaryOp, NumpyNamespaceProvider):
     
     def forward(self):
         data = self.np.matmul(self.a.data, self.b.data)

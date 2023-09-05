@@ -1,17 +1,16 @@
-from .util import get_numpy
+from .util.np import NumpyNamespaceProvider
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
 
 
 @OpDispatch.register(OP.SOFTMAX, DEVICE.CPU)
-class Softmax(BaseOp):
+class Softmax(BaseOp, NumpyNamespaceProvider):
 
     def __init__(self, x, *, dim):
         self.out = None
         self.x = x
         self.dim = dim
-        self.np = get_numpy()
 
     def forward(self):
         exp = self.np.exp(self.x.data)

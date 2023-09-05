@@ -18,15 +18,16 @@ TODO:
 - [x] multiattention
 - [] layernorm
 - [] embedding
+- [] dropout
 
-[] arg checks
-    [] OpDispatch
-    [] custom checks for each op
+- [] arg checks
+    - [] OpDispatch
+    - [] custom checks for each op
 
 PROBLEMS:
 - how to control requires_grad for outputs of ops
-- numpy export for cpu ops is lame atm
-- save stuff for backward during forward
+- [x] numpy export for cpu ops is lame atm
+- [irrelevant] save stuff for backward during forward
 - [x] support multidim reductions (this will also speedup batchnorm2d)
 
 TORCH API NOT IMPLEMENTED YET:

@@ -1,7 +1,7 @@
 import operator
 import functools
 
-from .util import get_numpy
+from .util.np import NumpyNamespaceProvider
 from ..stubs import ReduceOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
@@ -64,7 +64,7 @@ class MeanReduce(ReduceOp, _KeepdimMixin):
             self.x.grad += 1.0 / size * u
     
 
-class _MinMaxReduce(ReduceOp):
+class _MinMaxReduce(ReduceOp, NumpyNamespaceProvider):
     _FUNC = None
 
     def __init__(self, x, *, dim=None):
@@ -73,7 +73,6 @@ class _MinMaxReduce(ReduceOp):
             msg = f'multi-dimensional min-max reduce is not supported.'
             raise Exception(msg)
         self.mask = None
-        self.np = get_numpy()
         self._func = self._FUNC
         self._argfunc = f'arg{self._func}'
 

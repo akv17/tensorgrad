@@ -1,4 +1,4 @@
-from .util import get_numpy
+from .util.np import NumpyNamespaceProvider
 from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, conv2d_dilate
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
@@ -6,7 +6,7 @@ from ...const import OP, DEVICE
 
 
 @OpDispatch.register(OP.CONV2D, DEVICE.CPU)
-class Conv2D(BaseOp):
+class Conv2D(BaseOp, NumpyNamespaceProvider):
     # this op heavily uses np.einsum as it's significantly faster than 2d matmuls with reshapes.
     # also it turns out that multidim tensor matmuls are ridiculously slow.
 
@@ -17,7 +17,6 @@ class Conv2D(BaseOp):
         self.bias = bias
         self.stride = stride or (1, 1)
         self.padding = padding or (0, 0)
-        self.np = get_numpy()
 
     def forward(self):
         bias = self.bias.data if self.bias is not None else None

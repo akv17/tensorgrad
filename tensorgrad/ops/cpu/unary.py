@@ -1,4 +1,4 @@
-from .util import get_numpy
+from .util.np import NumpyNamespaceProvider
 from ..stubs import BaseOp, UnaryOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
@@ -24,11 +24,10 @@ class Pow(BaseOp):
 
 
 @OpDispatch.register(OP.EXP, DEVICE.CPU)
-class Exp(UnaryOp):
+class Exp(UnaryOp, NumpyNamespaceProvider):
     
     def forward(self):
-        np = get_numpy()
-        data = np.exp(self.x.data)
+        data = self.np.exp(self.x.data)
         self.out = self.x.from_data(data)
         return self.out
     
@@ -38,11 +37,10 @@ class Exp(UnaryOp):
 
 
 @OpDispatch.register(OP.LOG, DEVICE.CPU)
-class Log(UnaryOp):
+class Log(UnaryOp, NumpyNamespaceProvider):
     
     def forward(self):
-        np = get_numpy()
-        data = np.log(self.x.data)
+        data = self.np.log(self.x.data)
         self.out = self.x.from_data(data)
         return self.out
     

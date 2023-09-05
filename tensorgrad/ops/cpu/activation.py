@@ -1,4 +1,4 @@
-from .util import get_numpy
+from .util.np import NumpyNamespaceProvider
 from ..stubs import UnaryOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
@@ -22,11 +22,10 @@ class ReLU(UnaryOp):
 
 
 @OpDispatch.register(OP.SIGMOID, DEVICE.CPU)
-class Sigmoid(UnaryOp):
+class Sigmoid(UnaryOp, NumpyNamespaceProvider):
 
     def forward(self):
-        np = get_numpy()
-        data = 1.0 / (1.0 + np.exp(-self.x.data))
+        data = 1.0 / (1.0 + self.np.exp(-self.x.data))
         self.out = self.x.from_data(data)
         return self.out
 

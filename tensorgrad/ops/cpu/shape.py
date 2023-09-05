@@ -1,17 +1,16 @@
-from .util import get_numpy
+from .util.np import NumpyNamespaceProvider
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
 
 
 @OpDispatch.register(OP.SQUEEZE, DEVICE.CPU)
-class Squeeze(BaseOp):
+class Squeeze(BaseOp, NumpyNamespaceProvider):
 
     def __init__(self, x, *, dim):
         self.out = None
         self.x = x
         self.dim = dim
-        self.np = get_numpy()
 
     def forward(self):
         data = self.np.squeeze(self.x.data, self.dim)
@@ -24,13 +23,12 @@ class Squeeze(BaseOp):
 
 
 @OpDispatch.register(OP.UNSQUEEZE, DEVICE.CPU)
-class Unsqueeze(BaseOp):
+class Unsqueeze(BaseOp, NumpyNamespaceProvider):
     
     def __init__(self, x, *, dim):
         self.out = None
         self.x = x
         self.dim = dim
-        self.np = get_numpy()
 
     def forward(self):
         data = self.np.expand_dims(self.x.data, self.dim)
@@ -61,14 +59,13 @@ class Reshape(BaseOp):
 
 
 @OpDispatch.register(OP.PERMUTE, DEVICE.CPU)
-class Permute(BaseOp):
+class Permute(BaseOp, NumpyNamespaceProvider):
 
     def __init__(self, x, *, dims):
         self.out = None
         self.x = x
         self.dims = dims
         self.dims_grad = tuple(self.dims.index(i) for i in range(self.x.ndim))
-        self.np = get_numpy()
     
     def forward(self):
         data = self.np.transpose(self.x.data, self.dims)
@@ -81,7 +78,7 @@ class Permute(BaseOp):
 
 
 @OpDispatch.register(OP.SELECT, DEVICE.CPU)
-class Select(BaseOp):
+class Select(BaseOp, NumpyNamespaceProvider):
 
     def __init__(self, x, *, slice_):
         self.out = None
@@ -95,19 +92,17 @@ class Select(BaseOp):
 
     def backward(self):
         if self.x.requires_grad:
-            np = get_numpy()
-            grad = np.zeros_like(self.x.data)
+            grad = self.np.zeros_like(self.x.data)
             grad[self.slice_] = self.out.grad
             self.x.grad += grad
 
 
 @OpDispatch.register(OP.CONCAT, DEVICE.CPU)
-class Concat(BaseOp):
+class Concat(BaseOp, NumpyNamespaceProvider):
 
     def __init__(self, x, *, dim):
         self.x = x
         self.dim = dim
-        self.np = get_numpy()
     
     def forward(self):
         data = [xi.data for xi in self.x]

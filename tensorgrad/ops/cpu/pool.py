@@ -1,6 +1,6 @@
 import warnings
 
-from .util import get_numpy
+from .util.np import NumpyNamespaceProvider
 from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, conv2d_dilate
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
@@ -8,14 +8,13 @@ from ...const import OP, DEVICE
 
 
 @OpDispatch.register(OP.MAX_POOL2D, DEVICE.CPU)
-class MaxPool2D(BaseOp):
+class MaxPool2D(BaseOp, NumpyNamespaceProvider):
 
     def __init__(self, x, *, kernel_size, stride=None, padding=None):
         self.x = x
         self.kernel_size = kernel_size
         self.stride = stride or self.kernel_size
         self.padding = padding or (0, 0)
-        self.np = get_numpy()
         
         self._use_fast_impl = self._decide_use_fast_impl()
         if not self._use_fast_impl:
@@ -187,14 +186,13 @@ class MaxPool2D(BaseOp):
 
 
 @OpDispatch.register(OP.AVG_POOL2D, DEVICE.CPU)
-class AvgPool2D(BaseOp):
+class AvgPool2D(BaseOp, NumpyNamespaceProvider):
 
     def __init__(self, x, *, kernel_size, stride=None, padding=None):
         self.x = x
         self.kernel_size = kernel_size
         self.stride = stride or self.kernel_size
         self.padding = padding or (0, 0)
-        self.np = get_numpy()
     
     def forward(self):
         np = self.np
