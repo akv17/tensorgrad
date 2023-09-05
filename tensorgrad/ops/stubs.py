@@ -39,9 +39,10 @@ class BinaryOp(BaseOp, ABC):
 
 class ReduceOp(BaseOp, ABC):
 
-    def __init__(self, x, *, dim=None):
+    def __init__(self, x, *, dim=None, keepdim=False):
         self.x = x
         self.dim = dim
+        self.keepdim = keepdim
 
     @abstractmethod
     def forward(self): pass

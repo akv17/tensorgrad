@@ -1,49 +1,67 @@
+import operator
+import functools
+
 from .util import get_numpy
 from ..stubs import ReduceOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
 
 
+class _KeepdimMixin:
+
+    def _get_reduced_dims(self):
+        if self.dim is None:
+            dims = list(range(self.x.ndim))
+        elif isinstance(self.dim, int):
+            dims = (self.dim,)
+        else:
+            dims = self.dim
+        return dims
+    
+    def _get_reduced_size(self):
+        dims = self._get_reduced_dims()
+        sizes = [self.x.shape[d] for d in dims]
+        size = functools.reduce(operator.mul, sizes, 1)
+        return size
+    
+    def _apply_keepdim_to_upstream_grad(self):
+        dims = self._get_reduced_dims()
+        u = self.out.grad
+        if not self.keepdim:
+            shape = list(self.x.shape)
+            for d in dims:
+                shape[d] = 1
+            u = self.out.grad.reshape(shape)
+        return u
+
+
 @OpDispatch.register(OP.SUM_REDUCE, DEVICE.CPU)
-class SumReduce(ReduceOp):
+class SumReduce(ReduceOp, _KeepdimMixin):
     
     def forward(self):
-        data = self.x.data.sum(self.dim)
+        data = self.x.data.sum(self.dim, keepdims=self.keepdim)
         self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
         if self.x.requires_grad:
-            np = get_numpy()
-            out_grad = self.out.grad
-            if self.dim is None:
-                out_grad = self.out.grad
-            elif self.dim == 0 and self.x.ndim < 2:
-                out_grad = self.out.grad
-            else:
-                out_grad = np.expand_dims(self.out.grad, self.dim)
-            self.x.grad += out_grad
+            u = self._apply_keepdim_to_upstream_grad()
+            self.x.grad += u
 
 
 @OpDispatch.register(OP.MEAN_REDUCE, DEVICE.CPU)
-class MeanReduce(ReduceOp):
+class MeanReduce(ReduceOp, _KeepdimMixin):
 
     def forward(self):
-        data = self.x.data.mean(self.dim)
+        data = self.x.data.mean(self.dim, keepdims=self.keepdim)
         self.out = self.x.from_data(data)
         return self.out
 
     def backward(self):
         if self.x.requires_grad:
-            np = get_numpy()
-            size = self.x.numel() if self.dim is None else self.x.shape[self.dim]
-            if self.dim is None:
-                out_grad = self.out.grad
-            elif self.dim == 0 and self.x.ndim < 2:
-                out_grad = self.out.grad
-            else:
-                out_grad = np.expand_dims(self.out.grad, self.dim)
-            self.x.grad += 1.0 / size * out_grad
+            size = self._get_reduced_size()
+            u = self._apply_keepdim_to_upstream_grad()
+            self.x.grad += 1.0 / size * u
     
 
 class _MinMaxReduce(ReduceOp):
@@ -51,6 +69,9 @@ class _MinMaxReduce(ReduceOp):
 
     def __init__(self, x, *, dim=None):
         super().__init__(x, dim=dim)
+        if isinstance(self.dim, (tuple, list)):
+            msg = f'multi-dimensional min-max reduce is not supported.'
+            raise Exception(msg)
         self.mask = None
         self.np = get_numpy()
         self._func = self._FUNC
@@ -88,31 +109,3 @@ class MaxReduce(_MinMaxReduce):
 @OpDispatch.register(OP.MIN_REDUCE, DEVICE.CPU)
 class MinReduce(_MinMaxReduce):
     _FUNC = 'min'
-
-
-@OpDispatch.register(OP.STD_REDUCE, DEVICE.CPU)
-class StdReduce(ReduceOp):
-
-    def __init__(self, x, *, dim=None):
-        super().__init__(x, dim=dim)
-        self.np = get_numpy()
-        self._head = None
-        self._tail = None
-
-    def forward(self):
-        x = self.x.detach()
-        mean = x.mean(self.dim)
-        mean = mean.unsqueeze(self.dim) if self.dim is not None else mean
-        var_ = (x - mean) ** 2
-        n = x.shape[self.dim] if self.dim is not None else x.numel()
-        n -= 1
-        std = (var_.sum(self.dim) / n).sqrt()
-        self._head = x
-        self._tail = std
-        self.out = std.detach()
-        return self.out
-
-    def backward(self):
-        if self.x.requires_grad:
-            self._tail.backward(self.out.grad)
-            self.x.grad += self._head.grad

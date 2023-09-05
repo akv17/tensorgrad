@@ -141,18 +141,14 @@ class Tensor:
         out = OpDispatch.execute(OP.LOG, self)
         return out
 
-    def sum(self, dim=None):
-        out = OpDispatch.execute(OP.SUM_REDUCE, self, dim=dim)
+    def sum(self, dim=None, keepdim=False):
+        out = OpDispatch.execute(OP.SUM_REDUCE, self, dim=dim, keepdim=keepdim)
         return out
     
-    def mean(self, dim=None):
-        out = OpDispatch.execute(OP.MEAN_REDUCE, self, dim=dim)
+    def mean(self, dim=None, keepdim=False):
+        out = OpDispatch.execute(OP.MEAN_REDUCE, self, dim=dim, keepdim=keepdim)
         return out
     
-    def std(self, dim=None):
-        out = OpDispatch.execute(OP.STD_REDUCE, self, dim=dim)
-        return out
-        
     def max(self, dim=None):
         out = OpDispatch.execute(OP.MAX_REDUCE, self, dim=dim)
         return out

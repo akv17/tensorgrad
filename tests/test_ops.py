@@ -266,67 +266,70 @@ class TestOps(unittest.TestCase):
         self.assertTrue(check_tensors(tx.tolist(), x.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@forward')
 
     @parameterized.expand([
-        [(128,), None],
-        [(32, 64), None],
-        [(32, 64), 0],
-        [(32, 64), 1],
-        [(32, 64), -1],
-        [(32, 64), -2],
-        [(8, 16, 32), None],
-        [(8, 16, 32), 0],
-        [(8, 16, 32), 1],
-        [(8, 16, 32), 2],
-        [(4, 8, 16, 32), None],
-        [(4, 8, 16, 32), 0],
-        [(4, 8, 16, 32), 1],
-        [(4, 8, 16, 32), 2],
-        [(4, 8, 16, 32), 3],
+        [(128,), None, False],
+        [(32, 64), None, False],
+        [(32, 64), 0, False],
+        [(32, 64), 1, False],
+        [(32, 64), -1, False],
+        [(32, 64), -2, False],
+        [(8, 16, 32), None, False],
+        [(8, 16, 32), 0, False],
+        [(8, 16, 32), 1, False],
+        [(8, 16, 32), 2, False],
+        [(4, 8, 16, 32), None, False],
+        [(4, 8, 16, 32), 0, False],
+        [(4, 8, 16, 32), 1, False],
+        [(4, 8, 16, 32), 2, False],
+        [(4, 8, 16, 32), 3, False],
+
+        [(8,), None, True],
+        [(2, 4), 0, True],
+        [(2, 4), 1, True],
+        [(2, 4, 8), 0, True],
+        [(2, 4, 8), 1, True],
+        [(2, 4, 8), 2, True],
+        [(2, 4, 8), (0, 1), True],
+        [(2, 4, 8), (0, 2), True],
+        [(2, 4, 8), (1, 2), True],
+        [(2, 4, 8), (0, 1), False],
+        [(2, 4, 8), (0, 2), False],
+        [(2, 4, 8), (1, 2), False],
     ])
-    def test_sum_reduce(self, shape, dim):
-        self.helper._test_unary_op(shape=shape, method='sum', args=(dim,))
+    def test_sum_reduce(self, shape, dim, keepdim):
+        self.helper._test_unary_op(shape=shape, method='sum', args=(dim,), kwargs={'keepdim': keepdim})
     
     @parameterized.expand([
-        [(128,), None],
-        [(32, 64), None],
-        [(32, 64), 0],
-        [(32, 64), 1],
-        [(32, 64), -1],
-        [(32, 64), -2],
-        [(8, 16, 32), None],
-        [(8, 16, 32), 0],
-        [(8, 16, 32), 1],
-        [(8, 16, 32), 2],
-        [(4, 8, 16, 32), None],
-        [(4, 8, 16, 32), 0],
-        [(4, 8, 16, 32), 1],
-        [(4, 8, 16, 32), 2],
-        [(4, 8, 16, 32), 3],
+        [(128,), None, False],
+        [(32, 64), None, False],
+        [(32, 64), 0, False],
+        [(32, 64), 1, False],
+        [(32, 64), -1, False],
+        [(32, 64), -2, False],
+        [(8, 16, 32), None, False],
+        [(8, 16, 32), 0, False],
+        [(8, 16, 32), 1, False],
+        [(8, 16, 32), 2, False],
+        [(4, 8, 16, 32), None, False],
+        [(4, 8, 16, 32), 0, False],
+        [(4, 8, 16, 32), 1, False],
+        [(4, 8, 16, 32), 2, False],
+        [(4, 8, 16, 32), 3, False],
+
+        [(8,), None, True],
+        [(2, 4), 0, True],
+        [(2, 4), 1, True],
+        [(2, 4, 8), 0, True],
+        [(2, 4, 8), 1, True],
+        [(2, 4, 8), 2, True],
+        [(2, 4, 8), (0, 1), True],
+        [(2, 4, 8), (0, 2), True],
+        [(2, 4, 8), (1, 2), True],
+        [(2, 4, 8), (0, 1), False],
+        [(2, 4, 8), (0, 2), False],
+        [(2, 4, 8), (1, 2), False],
     ])
-    def test_mean_reduce(self, shape, dim):
-        self.helper._test_unary_op(shape=shape, method='mean', args=(dim,))
-    
-    @parameterized.expand([
-        [(8,), None],
-        [(8,), 0],
-        [(2, 3, 4), 2],
-        [(32, 64), None],
-        [(32, 64), 0],
-        [(32, 64), 1],
-        [(32, 64), -1],
-        [(32, 64), -2],
-        [(8, 16, 32), None],
-        [(8, 16, 32), 0],
-        [(8, 16, 32), 1],
-        [(8, 16, 32), 2],
-        [(4, 8, 16, 32), None],
-        [(4, 8, 16, 32), 0],
-        [(4, 8, 16, 32), 1],
-        [(4, 8, 16, 32), 2],
-        [(4, 8, 16, 32), 3],
-    ])
-    def test_std_reduce(self, shape, dim):
-        torch_kwargs = {'correction': 0.0}
-        self.helper._test_unary_op(shape=shape, method='std', args=(dim,), torch_kwargs=torch_kwargs)
+    def test_mean_reduce(self, shape, dim, keepdim):
+        self.helper._test_unary_op(shape=shape, method='mean', args=(dim,), kwargs={'keepdim': keepdim})
     
     @parameterized.expand([
         [(8,), None],
