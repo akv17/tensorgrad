@@ -1,11 +1,11 @@
-from .util.np import NumpyNamespaceProvider
+from .util.np import NumpyProvider
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
 
 
 @OpDispatch.register(OP.SOFTMAX, DEVICE.CPU)
-class Softmax(BaseOp, NumpyNamespaceProvider):
+class Softmax(BaseOp, NumpyProvider):
 
     def __init__(self, x, *, dim):
         self.out = None

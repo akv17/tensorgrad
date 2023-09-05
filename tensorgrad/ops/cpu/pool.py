@@ -1,6 +1,6 @@
 import warnings
 
-from .util.np import NumpyNamespaceProvider
+from .util.np import NumpyProvider
 from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, conv2d_dilate
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
@@ -8,7 +8,7 @@ from ...const import OP, DEVICE
 
 
 @OpDispatch.register(OP.MAX_POOL2D, DEVICE.CPU)
-class MaxPool2D(BaseOp, NumpyNamespaceProvider):
+class MaxPool2D(BaseOp, NumpyProvider):
 
     def __init__(self, x, *, kernel_size, stride=None, padding=None):
         self.x = x
@@ -186,7 +186,7 @@ class MaxPool2D(BaseOp, NumpyNamespaceProvider):
 
 
 @OpDispatch.register(OP.AVG_POOL2D, DEVICE.CPU)
-class AvgPool2D(BaseOp, NumpyNamespaceProvider):
+class AvgPool2D(BaseOp, NumpyProvider):
 
     def __init__(self, x, *, kernel_size, stride=None, padding=None):
         self.x = x

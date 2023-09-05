@@ -1,5 +1,5 @@
 import numpy
 
 
-class NumpyNamespaceProvider:
+class NumpyProvider:
     np = numpy

@@ -1,7 +1,7 @@
 import operator
 import functools
 
-from .util.np import NumpyNamespaceProvider
+from .util.np import NumpyProvider
 from ..stubs import ReduceOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
@@ -64,7 +64,7 @@ class MeanReduce(ReduceOp, _KeepdimMixin):
             self.x.grad += 1.0 / size * u
     
 
-class _MinMaxReduce(ReduceOp, NumpyNamespaceProvider):
+class _MinMaxReduce(ReduceOp, NumpyProvider):
     _FUNC = None
 
     def __init__(self, x, *, dim=None):

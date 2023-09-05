@@ -1,11 +1,11 @@
-from .util.np import NumpyNamespaceProvider
+from .util.np import NumpyProvider
 from ..stubs import BaseOp
 from ..dispatch import OpDispatch
 from ...const import OP, DEVICE
 
 
 @OpDispatch.register(OP.SQUEEZE, DEVICE.CPU)
-class Squeeze(BaseOp, NumpyNamespaceProvider):
+class Squeeze(BaseOp, NumpyProvider):
 
     def __init__(self, x, *, dim):
         self.out = None
@@ -23,7 +23,7 @@ class Squeeze(BaseOp, NumpyNamespaceProvider):
 
 
 @OpDispatch.register(OP.UNSQUEEZE, DEVICE.CPU)
-class Unsqueeze(BaseOp, NumpyNamespaceProvider):
+class Unsqueeze(BaseOp, NumpyProvider):
     
     def __init__(self, x, *, dim):
         self.out = None
@@ -59,7 +59,7 @@ class Reshape(BaseOp):
 
 
 @OpDispatch.register(OP.PERMUTE, DEVICE.CPU)
-class Permute(BaseOp, NumpyNamespaceProvider):
+class Permute(BaseOp, NumpyProvider):
 
     def __init__(self, x, *, dims):
         self.out = None
@@ -78,7 +78,7 @@ class Permute(BaseOp, NumpyNamespaceProvider):
 
 
 @OpDispatch.register(OP.SELECT, DEVICE.CPU)
-class Select(BaseOp, NumpyNamespaceProvider):
+class Select(BaseOp, NumpyProvider):
 
     def __init__(self, x, *, slice_):
         self.out = None
@@ -98,7 +98,7 @@ class Select(BaseOp, NumpyNamespaceProvider):
 
 
 @OpDispatch.register(OP.CONCAT, DEVICE.CPU)
-class Concat(BaseOp, NumpyNamespaceProvider):
+class Concat(BaseOp, NumpyProvider):
 
     def __init__(self, x, *, dim):
         self.x = x
