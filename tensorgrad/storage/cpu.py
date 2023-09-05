@@ -47,6 +47,12 @@ class CPUStorage:
         return data
 
     @classmethod
+    def cast(cls, data, dtype):
+        dtype = cls._map_dtype(dtype)
+        data = data.astype(dtype)
+        return data
+
+    @classmethod
     def get_device(cls, data):
         return DEVICE.CPU
     

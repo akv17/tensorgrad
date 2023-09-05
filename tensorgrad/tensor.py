@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from .const import OP
+from .const import OP, DTYPE
 from .storage import StorageDispatch
 from .ops import OpDispatch
 
@@ -240,6 +240,10 @@ class Tensor:
         data = self._storage.ones(shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
+    def float(self):
+        data = self._storage.cast(self.data, dtype=DTYPE.FLOAT32)
+        return self._copy_partial(data=data, dtype=DTYPE.FLOAT32)
+
     def arange(self, n):
         data = self._storage.arange(n, dtype=self.dtype)
         return self._copy_from_data(data)
@@ -254,12 +258,20 @@ class Tensor:
         from .render import render_graph
         render_graph(self)
 
-    def _copy_from_data(self, data, name=None):
+    def _copy_partial(self, data=None, dtype=None, device=None, requires_grad=None):
+        ob = type(self)(
+            data=data if data is not None else self.data.copy(),
+            dtype=dtype or self.dtype,
+            device=device or self.device,
+            requires_grad=requires_grad or self.requires_grad,
+        )
+        return ob
+
+    def _copy_from_data(self, data):
         ob = type(self)(
             data=data,
             dtype=self.dtype,
             device=self.device,
-            name=name,
             requires_grad=self.requires_grad,
         )
         return ob
