@@ -172,6 +172,48 @@ class TestNN(unittest.TestCase):
             tensorgrad_kwargs=kwargs,
             tol=1e-4,
         )
+    
+    @parameterized.expand([
+        [(2, 4, 8), 1],
+        [(2, 4, 8), 2],
+        [(2, 4, 8), 4],
+        [(8, 32, 128), 8],
+    ])
+    def test_multihead_attention(self, shape, num_heads):
+        embed_dim = shape[-1]
+        _q = np.random.normal(size=shape)
+        _k = np.random.normal(size=shape)
+        _v = np.random.normal(size=shape)
+
+        tdtype = getattr(torch, DTYPE.value)
+        tq = torch.tensor(_q, dtype=tdtype, requires_grad=True)
+        tk = torch.tensor(_k, dtype=tdtype, requires_grad=True)
+        tv = torch.tensor(_v, dtype=tdtype, requires_grad=True)
+        tm = torch.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, batch_first=True, bias=False)
+        to, _ = tm(tq, tk, tv)
+        self.helper._backward_torch(to)
+
+        q = tensorgrad.Tensor(_q, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        k = tensorgrad.Tensor(_k, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        v = tensorgrad.Tensor(_v, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        m = tensorgrad.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads)
+        m.init_from_torch(tm)
+        o = m(q, k, v)
+        self.helper._backward_tensorgrad(o)
+
+        name = f'{shape}::{num_heads}'
+        tol = 1e-4
+        self.helper._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [tq.grad, q.grad, tol, f'{name}@q_grad'],
+            [tk.grad, k.grad, tol, f'{name}@k_grad'],
+            [tv.grad, v.grad, tol, f'{name}@v_grad'],
+            [tm.in_proj_weight.grad.chunk(3)[0], m.q_weight.grad, tol, f'{name}@q_w_grad'],
+            [tm.in_proj_weight.grad.chunk(3)[1], m.k_weight.grad, tol, f'{name}@k_w_grad'],
+            [tm.in_proj_weight.grad.chunk(3)[2], m.v_weight.grad, tol, f'{name}@v_w_grad'],
+            [tm.out_proj.weight.grad, m.o_weight.grad, tol, f'{name}@o_w_grad'],
+        ])
+
 
 
 class Helper(unittest.TestCase):

@@ -1,3 +1,4 @@
+import math
 from .base import Module, Parameter
 from . import init
 
@@ -268,6 +269,68 @@ class BatchNorm2d(Module):
     def reset_parameters(self):
         init.ones(self.weight)
         init.zeros(self.bias)
+
+
+class MultiheadAttention(Module):
+
+    def __init__(self, embed_dim, num_heads, dtype=None, device=None):
+        super().__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        if self.embed_dim % self.num_heads != 0:
+            msg = '`embed_dim` must be divisible by `num_heads`'
+            raise Exception(msg)
+        self.head_dim = self.embed_dim // self.num_heads
+        
+        self.q_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
+        self.k_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
+        self.v_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
+        self.o_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
+        self.bias = Parameter.empty((1,), dtype=dtype, device=device)
+    
+    def forward(self, query, key, value):
+        q = query.matmul(self.q_weight.transpose(1, 0))
+        k = key.matmul(self.k_weight.transpose(1, 0))
+        v = value.matmul(self.v_weight.transpose(1, 0))
+
+        bs, sl = q.shape[:2]
+        q = q.reshape(bs, sl, self.num_heads, self.head_dim)
+        q = q.permute(0, 2, 1, 3)
+        k = k.reshape(bs, sl, self.num_heads, self.head_dim)
+        k = k.permute(0, 2, 1, 3)
+        v = v.reshape(bs, sl, self.num_heads, self.head_dim)
+        v = v.permute(0, 2, 1, 3)
+
+        qk = q.matmul(k.permute(0, 1, 3, 2))
+        qk /= math.sqrt(self.head_dim)
+        qk = qk.softmax(-1)
+
+        attn = qk.matmul(v)
+        attn = attn.permute(0, 2, 1, 3)
+        attn = attn.reshape(bs, sl, self.num_heads * self.head_dim)
+
+        out = attn.matmul(self.o_weight.transpose(1, 0))
+        self.out = out
+        return self.out
+    
+    def reset_parameters(self):
+        init.uniform_fan_in(self.q_weight)
+        init.uniform_fan_in(self.k_weight)
+        init.uniform_fan_in(self.v_weight)
+        init.uniform_fan_in(self.o_weight)
+    
+    def init_from_torch(self, module):
+        params = dict(module.named_parameters())
+        out_weight = params['out_proj.weight'].detach().cpu().numpy()
+        in_weights = params['in_proj_weight'].detach().cpu().numpy()
+        # torch q, k, v weights are fused along first dim so reshape by 3 to unfuse them.
+        q_weight, k_weight, v_weight = in_weights.reshape(3, self.embed_dim, self.embed_dim)
+        dtype = self.q_weight.dtype
+        device = self.q_weight.device
+        self.q_weight = Parameter(q_weight, dtype=dtype, device=device)
+        self.k_weight = Parameter(k_weight, dtype=dtype, device=device)
+        self.v_weight = Parameter(v_weight, dtype=dtype, device=device)
+        self.o_weight = Parameter(out_weight, dtype=dtype, device=device)
 
 
 class ReLU(Module):
