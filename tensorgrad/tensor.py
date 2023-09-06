@@ -88,7 +88,7 @@ class Tensor:
         return self._op.backward if self._op is not None else lambda: None
     
     def __repr__(self):
-        return f'Tensor(shape={self.shape}, dtype={self.dtype}, device={self.device}, name={self.name})'
+        return f'Tensor(shape={self.shape}, dtype={self.dtype}, device={self.device})'
 
     def __getitem__(self, slice_):
         out = OpDispatch.execute(OP.SELECT, self, slice_=slice_)

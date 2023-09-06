@@ -43,6 +43,12 @@ class Linear(Module):
         if self.bias is not None:
             init.uniform_fan_in(self.bias)
 
+    def _check_input(self, x):
+        n_in = x.shape[-1]
+        if n_in != self.in_features:
+            msg = f'expected input to have {self.in_features} features but got {n_in} features.'
+            raise Exception(msg)
+
 
 class Conv2d(Module):
     """
@@ -100,6 +106,12 @@ class Conv2d(Module):
         init.uniform_fan_in(self.weight)
         if self.bias is not None:
             init.uniform_fan_in(self.bias)
+
+    def _check_input(self, x):
+        n_in = x.shape[1]
+        if n_in != self.in_channels:
+            msg = f'expected input to have {self.in_channels} channels but got {n_in} channels.'
+            raise Exception(msg)
 
     def _normalize_kernel_size(self):
         ks = self.kernel_size
@@ -199,3 +211,23 @@ class MultiheadAttention(Module):
         self.k_weight = Parameter(k_weight, dtype=dtype, device=device)
         self.v_weight = Parameter(v_weight, dtype=dtype, device=device)
         self.o_weight = Parameter(out_weight, dtype=dtype, device=device)
+
+    def _check_input(self, query, key, value, attn_mask=None):
+        if query.ndim != 3:
+            msg = f'expected query to have 3 dimensions but got {query.ndim} dimensions.'
+            raise Exception(msg)
+        if key.ndim != 3:
+            msg = f'expected key to have 3 dimensions but got {key.ndim} dimensions.'
+            raise Exception(msg)
+        if value.ndim != 3:
+            msg = f'expected value to have 3 dimensions but got {value.ndim} dimensions.'
+            raise Exception(msg)
+        if attn_mask is not None and attn_mask.ndim not in (2, 3):
+            msg = f'expected attn_mask to have 2 or 3 dimensions but got {attn_mask.ndim} dimensions.'
+            raise Exception(msg)
+        if key.shape[1] != value.shape[1]:
+            msg = f'expected key and value to have same sequence length but got {(key.shape[1], value.shape[1])}.'
+            raise Exception(msg)
+        if key.shape[-1] != value.shape[-1]:
+            msg = f'expected key and value to have same embedding dimensions but got {(key.shape[-1], value.shape[-1])}.'
+            raise Exception(msg)

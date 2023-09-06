@@ -25,6 +25,7 @@ class Module(ABC):
         super().__setattr__(name, value)
 
     def __call__(self, *args, **kwargs):
+        self._check_input(*args, **kwargs)
         x = self.forward(*args, **kwargs)
         return x
 
@@ -37,3 +38,4 @@ class Module(ABC):
     def parameters(self):
         return self._parameters.copy()
     
+    def _check_input(self, *args, **kwargs): pass
