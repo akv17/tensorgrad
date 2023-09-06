@@ -407,6 +407,24 @@ class Embedding(Module):
         )
 
 
+class Dropout(Module):
+
+    def __init__(self, p=0.5):
+        self.p = p
+        self.scale = 1.0 / (1.0 - self.p)
+    
+    def forward(self, x):
+        mask = self._generate_mask(x)
+        x *= mask * self.scale
+        return x
+    
+    def _generate_mask(self, x):
+        # we invert mask and cast it to float to perform masking via elementwise multiplication.
+        # positions with True in the original bool mask are meant to be zeroed out.
+        mask = (~x.bernoulli(p=self.p, shape=x.shape)).float()
+        return mask
+
+
 class ReLU(Module):
     
     def forward(self, x):

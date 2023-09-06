@@ -1,7 +1,7 @@
 from .util.np import NumpyProvider
 from ..stubs import BaseOp, UnaryOp
 from ..dispatch import OpDispatch
-from ...const import OP, DEVICE
+from ...const import OP, DEVICE, DTYPE
 
 
 @OpDispatch.register(OP.POW, DEVICE.CPU)
@@ -49,21 +49,18 @@ class Log(UnaryOp, NumpyProvider):
             self.x.grad += 1.0 / self.x.data * self.out.grad
 
 
-@OpDispatch.register(OP.MASKED_FILL, DEVICE.CPU)
-class MaskedFill(BaseOp):
-
-    def __init__(self, x, *, mask, value):
-        self.x = x
-        self.mask = mask
-        self.value = value
-
+@OpDispatch.register(OP.INVERT, DEVICE.CPU)
+class Invert(UnaryOp, NumpyProvider):
+    
     def forward(self):
-        data = self.x.data
-        data[self.mask.data] = self.value
-        self.x.data = data
-        self.out = self.x
+        x = self.x
+        if x.dtype is not DTYPE.BOOL:
+            msg = f'invert may only be called on boolean tensor, but got tensor of type: {x.dtype}'
+            raise Exception(msg)
+        data = ~x.data
+        self.out = self.x.from_data(data)
         return self.out
     
     def backward(self):
-        # this op does not have a gradient.
-        pass
+        if self.x.requires_grad:
+            self.x.grad += self.out.grad

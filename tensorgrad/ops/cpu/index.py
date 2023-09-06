@@ -24,6 +24,26 @@ class Select(BaseOp, NumpyProvider):
             self.x.grad += grad
 
 
+@OpDispatch.register(OP.MASKED_FILL, DEVICE.CPU)
+class MaskedFill(BaseOp):
+
+    def __init__(self, x, *, mask, value):
+        self.x = x
+        self.mask = mask
+        self.value = value
+
+    def forward(self):
+        data = self.x.data
+        data[self.mask.data] = self.value
+        self.x.data = data
+        self.out = self.x
+        return self.out
+    
+    def backward(self):
+        # this op does not have a gradient.
+        pass
+
+
 @OpDispatch.register(OP.LOOKUP, DEVICE.CPU)
 class Lookup(BaseOp, NumpyProvider):
     # this is essentially an embedding implementation.

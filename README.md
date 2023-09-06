@@ -16,9 +16,9 @@ TODO:
 - [x] maxpool2d
 
 - [x] multiattention
-- [] layernorm
+- [x] layernorm
 - [x] embedding
-- [] dropout
+- [x] dropout
 
 - [] arg checks
     - [] OpDispatch

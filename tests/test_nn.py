@@ -8,6 +8,7 @@ from tests.util import require_torch, check_tensors, generate_cases, get_device,
 
 import tensorgrad
 torch = require_torch()
+torch.manual_seed(0)
 
 DEVICE = get_device()
 DTYPE = get_dtype()
@@ -224,6 +225,14 @@ class TestNN(unittest.TestCase):
             embedding_dim=embedding_dim
         )
 
+    @parameterized.expand([
+        [(2, 4), 0.1],
+        [(2, 4, 8), 0.1],
+        [(2, 3, 16, 16), 0.1],
+    ])
+    def test_dropout(self, shape, p):
+        self.helper._test_dropout(shape=shape, p=p)
+
 
 class Helper(unittest.TestCase):
 
@@ -361,6 +370,33 @@ class Helper(unittest.TestCase):
         self._check_tensors([
             [to, o, tol, f'{test_name}@forward'],
             [tm.weight.grad, m.weight.grad, tol, f'{test_name}@w_grad'],
+        ])
+
+    def _test_dropout(self, shape, p):
+        _x = np.random.normal(size=shape)
+        
+        tdtype = getattr(torch, DTYPE.value)
+        tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
+        tm = torch.nn.Dropout(p)
+        to = tm(tx)
+        tmask = to == 0.0
+        self._backward_torch(to)
+
+
+        x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
+        m = tensorgrad.nn.Dropout(p)
+        # monkey patch mask generation to apply exactly the same mask as applied by torch.
+        mask = tmask.detach().cpu().numpy()
+        mask = tensorgrad.Tensor(mask, dtype=DTYPE.BOOL, requires_grad=False)
+        m._generate_mask = lambda __x: (~mask).float()
+        o = m(x)
+        self._backward_tensorgrad(o)
+
+        tol = 1e-5
+        test_name = f'{shape}::{p}'
+        self._check_tensors([
+            [to, o, tol, f'{test_name}@forward'],
+            [tx.grad, x.grad, tol, f'{test_name}@x_grad'],
         ])
 
     def _check_tensors(self, pairs):

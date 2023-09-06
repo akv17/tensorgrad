@@ -18,6 +18,7 @@ class OP(str, Enum):
     SUB = 'sub'
     MUL = 'mul'
     DIV = 'div'
+    INVERT = 'invert'
     
     POW = 'pow'
     EXP = 'exp'

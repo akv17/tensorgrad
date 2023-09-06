@@ -45,6 +45,13 @@ class CPUStorage:
         dtype = cls._map_dtype(dtype)
         data = np.random.uniform(a, b, size=shape).astype(dtype)
         return data
+    
+    @classmethod
+    def bernoulli(cls, p, shape, dtype=None):
+        np = cls._get_numpy()
+        dtype = cls._map_dtype(dtype)
+        data = np.random.binomial(n=1, p=p, size=shape).astype(dtype)
+        return data
 
     @classmethod
     def cast(cls, data, dtype):

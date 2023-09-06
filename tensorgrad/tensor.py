@@ -27,6 +27,12 @@ class Tensor:
         kwargs = {'a': 0.0, 'b': 1.0}
         tensor = cls._factory('random_uniform', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
         return tensor
+    
+    @classmethod
+    def bernoulli(cls, p, shape, dtype=None, device=None, requires_grad=True):
+        kwargs = {'p': p}
+        tensor = cls._factory('bernoulli', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
+        return tensor
 
     @classmethod
     def _factory(cls, method, shape, dtype, device, requires_grad, **kwargs):
@@ -127,6 +133,10 @@ class Tensor:
     def __neg__(self):
         neg = self._wrap_constant_maybe(-1.0)
         out = OpDispatch.execute(OP.MUL, self, neg)
+        return out
+
+    def __invert__(self):
+        out = OpDispatch.execute(OP.INVERT, self)
         return out
 
     def sqrt(self):
@@ -261,6 +271,10 @@ class Tensor:
     def float(self):
         data = self._storage.cast(self.data, dtype=DTYPE.FLOAT32)
         return self._copy_partial(data=data, dtype=DTYPE.FLOAT32)
+    
+    def bool(self):
+        data = self._storage.cast(self.data, dtype=DTYPE.BOOL)
+        return self._copy_partial(data=data, dtype=DTYPE.BOOL)
 
     def arange(self, n):
         data = self._storage.arange(n, dtype=self.dtype)
