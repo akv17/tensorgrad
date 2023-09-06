@@ -3,14 +3,11 @@ from .base import Module, Parameter
 from .. import init
 
 
-class CrossEntropyLoss:
+class CrossEntropyLoss(Module):
 
     def __init__(self, reduction='mean'):
+        super().__init__()
         self.reduction = reduction
-
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
 
     def forward(self, outputs, targets):
         softmax = outputs.softmax(dim=-1)
@@ -20,17 +17,20 @@ class CrossEntropyLoss:
         reduced = getattr(pred, self.reduction)()
         loss = -reduced
         return loss
+    
+    def init_from_torch(self, module):
+        pass
 
 
-class MSELoss:
+class MSELoss(Module):
 
     def __init__(self, reduction='mean'):
+        super().__init__()
         self.reduction = reduction
-
-    def __call__(self, *args, **kwargs):
-        out = self.forward(*args, **kwargs)
-        return out
 
     def forward(self, outputs, targets):
         loss = ((outputs - targets) ** 2).mean()
         return loss
+    
+    def init_from_torch(self, module):
+        pass

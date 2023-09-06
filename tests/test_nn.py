@@ -281,6 +281,40 @@ class TestNN(unittest.TestCase):
     def test_dropout(self, shape, p):
         self.helper._test_dropout(shape=shape, p=p)
 
+    @parameterized.expand([
+        [(2, 1)],
+        [(2, 4)],
+        [(64, 32)],
+    ])
+    def test_cross_entropy_loss(self, shape):
+        num_classes = shape[-1]
+        logits = np.random.normal(size=(shape))
+        targets = np.random.randint(0, num_classes, size=(shape[0],))
+        name = f'{shape}::{num_classes}'
+        self.helper._test_loss(
+            test_name=name,
+            module='CrossEntropyLoss',
+            outputs=logits,
+            targets=targets,
+            targets_as_int=True
+        )
+    
+    @parameterized.expand([
+        [(2, 1)],
+        [(2, 4)],
+        [(64, 32)],
+    ])
+    def test_mse_loss(self, shape):
+        logits = np.random.normal(size=shape)
+        targets = np.random.normal(size=shape)
+        name = f'{shape}'
+        self.helper._test_loss(
+            test_name=name,
+            module='MSELoss',
+            outputs=logits,
+            targets=targets,
+        )
+
 
 class Helper(unittest.TestCase):
 
@@ -445,6 +479,31 @@ class Helper(unittest.TestCase):
         self._check_tensors([
             [to, o, tol, f'{test_name}@forward'],
             [tx.grad, x.grad, tol, f'{test_name}@x_grad'],
+        ])
+
+    def _test_loss(self, test_name, module, outputs, targets, targets_as_int=False):
+        _outputs = outputs
+        _targets = targets
+        
+        tdtype = getattr(torch, DTYPE.value)
+        to = torch.tensor(_outputs, dtype=tdtype, requires_grad=True)
+        ttdtype = torch.long if targets_as_int else tdtype
+        tt = torch.tensor(_targets, dtype=ttdtype, requires_grad=False)
+        tm = getattr(torch.nn, module)()
+        tloss = tm(to, tt)
+        tloss.backward()
+
+        o = tensorgrad.Tensor(_outputs, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        tdtype = DTYPE.INT32 if targets_as_int else DTYPE
+        t = tensorgrad.Tensor(_targets, dtype=tdtype, device=DEVICE, requires_grad=False)
+        m = getattr(tensorgrad.nn, module)()
+        loss = m(o, t)
+        loss.backward()
+
+        tol = 1e-5
+        self._check_tensors([
+            [tloss, loss, tol, f'{test_name}@forward'],
+            [to.grad, o.grad, tol, f'{test_name}@o_grad'],
         ])
 
     def _check_tensors(self, pairs):
