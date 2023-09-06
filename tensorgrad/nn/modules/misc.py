@@ -10,6 +10,7 @@ class Embedding(Module):
         self.embedding_dim = embedding_dim
         self.padding_idx = padding_idx
         self.weight = Parameter.empty((self.num_embeddings, self.embedding_dim), dtype=dtype, device=device)
+        self.reset_parameters()
     
     def forward(self, x):
         o = self.weight.lookup(x)

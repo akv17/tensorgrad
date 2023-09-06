@@ -77,6 +77,7 @@ class Conv2d(Module):
 
         self.weight = Parameter.empty((self.out_channels, self.in_channels, *self._kernel_size), dtype=dtype, device=device)
         self.bias = Parameter.empty((self.out_channels,), dtype=dtype, device=device) if bias else None
+        self.reset_parameters()
 
     def forward(self, x):
         out = x.conv2d(kernel=self.weight, bias=self.bias, stride=self._stride, padding=self._padding)
@@ -141,6 +142,7 @@ class MultiheadAttention(Module):
         self.k_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
         self.v_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
         self.o_weight = Parameter.empty((self.embed_dim, self.embed_dim), dtype=dtype, device=device)
+        self.reset_parameters()
     
     def forward(self, query, key, value, attn_mask=None):
         q = query.matmul(self.q_weight.transpose(1, 0))

@@ -16,6 +16,7 @@ class _GeneralizedNorm(Module, ABC):
         
         self.weight = Parameter.empty(self.num_features, dtype=dtype, device=device)
         self.bias = Parameter.empty(self.num_features, dtype=dtype, device=device)
+        self.reset_parameters()
 
     def forward(self, x):
         mean = x.mean(self.dim, keepdim=True)
