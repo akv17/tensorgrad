@@ -26,6 +26,7 @@ class Select(BaseOp, NumpyProvider):
 
 @OpDispatch.register(OP.MASKED_FILL, DEVICE.CPU)
 class MaskedFill(BaseOp):
+    # this op does not have a gradient.
 
     def __init__(self, x, *, mask, value):
         self.x = x
@@ -40,7 +41,6 @@ class MaskedFill(BaseOp):
         return self.out
     
     def backward(self):
-        # this op does not have a gradient.
         pass
 
 
@@ -48,6 +48,8 @@ class MaskedFill(BaseOp):
 class Lookup(BaseOp, NumpyProvider):
     # this is essentially an embedding implementation.
     # it's not possible to reuse Select for this purpose because embedding weight gradients must be accumulated.
+
+    # tested via `nn.Embedding`
 
     def __init__(self, x, *, mask):
         self.out = None

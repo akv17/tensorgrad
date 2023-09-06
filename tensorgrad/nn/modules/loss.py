@@ -1,3 +1,8 @@
+import math
+from .base import Module, Parameter
+from .. import init
+
+
 class CrossEntropyLoss:
 
     def __init__(self, reduction='mean'):

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from ..tensor import Tensor
+from ...tensor import Tensor
 
 
 class Parameter(Tensor):
@@ -10,14 +10,6 @@ class Parameter(Tensor):
         value = super().__repr__()
         value = value.replace('Tensor', 'Parameter')
         return value
-
-
-class ParameterSpec:
-
-    def __init__(self, shape, dtype, device):
-        self.shape = shape
-        self.dtype = dtype
-        self.device = device
 
 
 class Module:
@@ -45,3 +37,4 @@ class Module:
 
     def parameters(self):
         return self._parameters.copy()
+    

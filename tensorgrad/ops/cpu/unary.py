@@ -50,7 +50,8 @@ class Log(UnaryOp, NumpyProvider):
 
 
 @OpDispatch.register(OP.INVERT, DEVICE.CPU)
-class Invert(UnaryOp, NumpyProvider):
+class Invert(UnaryOp):
+    # tested via `nn.Dropout`
     
     def forward(self):
         x = self.x
