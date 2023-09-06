@@ -2,6 +2,7 @@ from .unary import *
 from .binary import *
 from .reduce import *
 from .shape import *
+from .index import *
 from .activation import *
 from .matmul import *
 from .softmax import *

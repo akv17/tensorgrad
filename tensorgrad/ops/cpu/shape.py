@@ -77,26 +77,6 @@ class Permute(BaseOp, NumpyProvider):
             self.x.grad += self.np.transpose(self.out.grad, self.dims_grad)
 
 
-@OpDispatch.register(OP.SELECT, DEVICE.CPU)
-class Select(BaseOp, NumpyProvider):
-
-    def __init__(self, x, *, slice_):
-        self.out = None
-        self.x = x
-        self.slice_ = slice_
-    
-    def forward(self):
-        data = self.x.data[self.slice_]
-        self.out = self.x.from_data(data)
-        return self.out
-
-    def backward(self):
-        if self.x.requires_grad:
-            grad = self.np.zeros_like(self.x.data)
-            grad[self.slice_] = self.out.grad
-            self.x.grad += grad
-
-
 @OpDispatch.register(OP.CONCAT, DEVICE.CPU)
 class Concat(BaseOp, NumpyProvider):
 

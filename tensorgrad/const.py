@@ -35,6 +35,7 @@ class OP(str, Enum):
     RESHAPE = 'reshape'
     PERMUTE = 'permute'
     SELECT = 'select'
+    LOOKUP = 'lookup'
     CONCAT = 'concat'
 
     RELU = 'relu'

@@ -194,6 +194,18 @@ class TestNN(unittest.TestCase):
             attn_mask_dim=attn_mask_dim
         )
 
+    @parameterized.expand([
+        [(2, 4), 8, 16],
+        [(2, 4, 8), 8, 16],
+        [(2, 4, 8, 16), 8, 16],
+    ])
+    def test_embedding(self, shape, num_embeddings, embedding_dim):
+        self.helper._test_embedding(
+            shape=shape,
+            num_embeddings=num_embeddings,
+            embedding_dim=embedding_dim
+        )
+
 
 class Helper(unittest.TestCase):
 
@@ -310,6 +322,27 @@ class Helper(unittest.TestCase):
             [tm.in_proj_weight.grad.chunk(3)[1], m.k_weight.grad, tol, f'{name}@k_w_grad'],
             [tm.in_proj_weight.grad.chunk(3)[2], m.v_weight.grad, tol, f'{name}@v_w_grad'],
             [tm.out_proj.weight.grad, m.o_weight.grad, tol, f'{name}@o_w_grad'],
+        ])
+
+    def _test_embedding(self, shape, num_embeddings, embedding_dim):
+        _x = np.random.randint(0, num_embeddings, size=shape)
+
+        tx = torch.tensor(_x, dtype=torch.int32, requires_grad=False)
+        tm = torch.nn.Embedding(num_embeddings=num_embeddings, embedding_dim=embedding_dim)
+        to = tm(tx)
+        self._backward_torch(to)
+
+        x = tensorgrad.Tensor(_x, dtype=DTYPE.INT32, device=DEVICE, name='x', requires_grad=False)
+        m = tensorgrad.nn.Embedding(num_embeddings=num_embeddings, embedding_dim=embedding_dim)
+        m.init_from_torch(tm)
+        o = m(x)
+        self._backward_tensorgrad(o)
+
+        tol = 1e-5
+        test_name = f'{shape}::{num_embeddings}::{embedding_dim}'
+        self._check_tensors([
+            [to, o, tol, f'{test_name}@forward'],
+            [tm.weight.grad, m.weight.grad, tol, f'{test_name}@w_grad'],
         ])
 
     def _check_tensors(self, pairs):

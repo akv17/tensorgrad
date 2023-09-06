@@ -17,7 +17,7 @@ TODO:
 
 - [x] multiattention
 - [] layernorm
-- [] embedding
+- [x] embedding
 - [] dropout
 
 - [] arg checks

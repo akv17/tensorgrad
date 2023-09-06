@@ -323,8 +323,7 @@ class MultiheadAttention(Module):
         attn = attn.reshape(bs, q_sl, self.num_heads * self.head_dim)
 
         out = attn.matmul(self.o_weight.transpose(1, 0))
-        self.out = out
-        return self.out
+        return out
     
     def reset_parameters(self):
         init.uniform_fan_in(self.q_weight)
@@ -344,6 +343,30 @@ class MultiheadAttention(Module):
         self.k_weight = Parameter(k_weight, dtype=dtype, device=device)
         self.v_weight = Parameter(v_weight, dtype=dtype, device=device)
         self.o_weight = Parameter(out_weight, dtype=dtype, device=device)
+
+
+class Embedding(Module):
+
+    def __init__(self, num_embeddings, embedding_dim, padding_idx=None, dtype=None, device=None):
+        super().__init__()
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.padding_idx = padding_idx
+        self.weight = Parameter.empty((self.num_embeddings, self.embedding_dim), dtype=dtype, device=device)
+    
+    def forward(self, x):
+        o = self.weight.lookup(x)
+        return o
+    
+    def reset_parameters(self):
+        init.uniform_fan_in(self.weight)
+    
+    def init_from_torch(self, module):
+        self.weight = Parameter(
+            module.weight.detach().cpu().numpy(),
+            dtype=self.weight.dtype,
+            device=self.weight.device,
+        )
 
 
 class ReLU(Module):
