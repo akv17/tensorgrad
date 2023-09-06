@@ -22,6 +22,54 @@ class TestNN(unittest.TestCase):
         self.helper = Helper()
     
     @parameterized.expand([
+        [(128,)],
+        [(32, 64)],
+        [(8, 16, 32)],
+        [(4, 8, 16, 32)],
+    ])
+    def test_relu(self, shape):
+        name = f'{shape}'
+        self.helper._test_module_without_params(
+            test_name=name,
+            module='ReLU',
+            input_shape=shape,
+            torch_kwargs={},
+            tensorgrad_kwargs={},
+        )
+    
+    @parameterized.expand([
+        [(128,)],
+        [(32, 64)],
+        [(8, 16, 32)],
+        [(4, 8, 16, 32)],
+    ])
+    def test_sigmoid(self, shape):
+        name = f'{shape}'
+        self.helper._test_module_without_params(
+            test_name=name,
+            module='Sigmoid',
+            input_shape=shape,
+            torch_kwargs={},
+            tensorgrad_kwargs={},
+        )
+    
+    @parameterized.expand([
+        [(128,)],
+        [(32, 64)],
+        [(8, 16, 32)],
+        [(4, 8, 16, 32)],
+    ])
+    def test_identity(self, shape):
+        name = f'{shape}'
+        self.helper._test_module_without_params(
+            test_name=name,
+            module='Identity',
+            input_shape=shape,
+            torch_kwargs={},
+            tensorgrad_kwargs={},
+        )
+
+    @parameterized.expand([
         [(2, 8), 16, True],
         [(2, 8), 16, False],
         [(2, 8, 16), 32, True],
@@ -31,7 +79,7 @@ class TestNN(unittest.TestCase):
     def test_linear(self, shape, out_features, bias):
         kwargs = {'in_features': shape[-1], 'out_features': out_features, 'bias': bias}
         name = str(kwargs)
-        self.helper._test_weight_and_bias_module(
+        self.helper._test_module_with_weight_and_bias(
             test_name=name,
             module='Linear',
             input_shape=shape,
@@ -71,7 +119,7 @@ class TestNN(unittest.TestCase):
             'bias': bias,
         }
         name = str(kwargs)
-        self.helper._test_weight_and_bias_module(
+        self.helper._test_module_with_weight_and_bias(
             test_name=name,
             module='Conv2d',
             input_shape=shape,
@@ -101,7 +149,7 @@ class TestNN(unittest.TestCase):
             'padding': padding,
         }
         name = str(kwargs)
-        self.helper._test_pooling_module(
+        self.helper._test_module_without_params(
             test_name=name,
             module='MaxPool2d',
             input_shape=shape,
@@ -131,7 +179,7 @@ class TestNN(unittest.TestCase):
             'padding': padding,
         }
         name = str(kwargs)
-        self.helper._test_pooling_module(
+        self.helper._test_module_without_params(
             test_name=name,
             module='AvgPool2d',
             input_shape=shape,
@@ -148,7 +196,7 @@ class TestNN(unittest.TestCase):
     def test_batch_norm1d(self, shape):
         kwargs = {'num_features': shape[-1]}
         name = str(kwargs)
-        self.helper._test_weight_and_bias_module(
+        self.helper._test_module_with_weight_and_bias(
             test_name=name,
             module='BatchNorm1d',
             input_shape=shape,
@@ -165,7 +213,7 @@ class TestNN(unittest.TestCase):
     def test_batch_norm2d(self, shape):
         kwargs = {'num_features': shape[1]}
         name = str(kwargs)
-        self.helper._test_weight_and_bias_module(
+        self.helper._test_module_with_weight_and_bias(
             test_name=name,
             module='BatchNorm2d',
             input_shape=shape,
@@ -183,7 +231,7 @@ class TestNN(unittest.TestCase):
     def test_layer_norm(self, shape, dims):
         kwargs = {'normalized_shape': shape[-dims:]}
         name = str(kwargs)
-        self.helper._test_weight_and_bias_module(
+        self.helper._test_module_with_weight_and_bias(
             test_name=name,
             module='LayerNorm',
             input_shape=shape,
@@ -236,7 +284,7 @@ class TestNN(unittest.TestCase):
 
 class Helper(unittest.TestCase):
 
-    def _test_weight_and_bias_module(
+    def _test_module_with_weight_and_bias(
         self,
         test_name,
         module,
@@ -269,7 +317,7 @@ class Helper(unittest.TestCase):
                 [tm.bias.grad, m.bias.grad, tol, f'{test_name}@b_grad'],
             ])
     
-    def _test_pooling_module(
+    def _test_module_without_params(
         self,
         test_name,
         module,

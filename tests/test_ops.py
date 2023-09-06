@@ -374,24 +374,6 @@ class TestOps(unittest.TestCase):
         self.helper._test_unary_op(shape=shape, method='min', args=args)
 
     @parameterized.expand([
-        [(128,)],
-        [(32, 64)],
-        [(8, 16, 32)],
-        [(4, 8, 16, 32)],
-    ])
-    def test_relu(self, shape):
-        self.helper._test_unary_op(shape=shape, method='relu')
-    
-    @parameterized.expand([
-        [(128,)],
-        [(32, 64)],
-        [(8, 16, 32)],
-        [(4, 8, 16, 32)],
-    ])
-    def test_sigmoid(self, shape):
-        self.helper._test_unary_op(shape=shape, method='sigmoid')
-
-    @parameterized.expand([
         [(2, 4), (4, 2)],
         [(2, 2), (2, 2)],
         [(4, 1), (1, 4)],
