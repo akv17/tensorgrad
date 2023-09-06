@@ -3,6 +3,7 @@ from uuid import uuid4
 from .const import OP, DTYPE
 from .storage import StorageDispatch
 from .ops import OpDispatch
+from .ctx import is_grad_enabled
 
 
 class Tensor:
@@ -51,7 +52,7 @@ class Tensor:
         requires_grad=True,
     ):
         self.name = name or f'tensor@{str(uuid4())[:8]}'
-        self.requires_grad = requires_grad
+        self.requires_grad = requires_grad if is_grad_enabled() else False
         
         self._storage = StorageDispatch.get(device)
         self.data = self._storage.tensor(data, dtype=dtype)

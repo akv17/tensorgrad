@@ -1,3 +1,6 @@
+from ..ctx import is_grad_enabled
+
+
 class OpDispatch:
     _DISPATCH = {}
 
@@ -15,8 +18,8 @@ class OpDispatch:
         # not passing unpacked inputs because op requires original args passed (e.g. concat requires stacked inputs)
         op = op(*args, **kwargs)
         out = op.forward()
-        out.requires_grad = requires_grad
-        out._children = inputs
+        out.requires_grad = requires_grad if is_grad_enabled() else False
+        out._children = inputs if is_grad_enabled() else ()
         out._op = op
         return out
 
