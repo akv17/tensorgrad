@@ -5,3 +5,4 @@ from .linear import *
 from .norm import *
 from .pool import *
 from .misc import *
+from .loss import *
