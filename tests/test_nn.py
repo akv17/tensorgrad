@@ -174,6 +174,24 @@ class TestNN(unittest.TestCase):
         )
     
     @parameterized.expand([
+        [(2, 4), 1],
+        [(2, 4, 8), 1],
+        [(2, 4, 8), 2],
+        [(2, 3, 16, 16), 3],
+    ])
+    def test_layer_norm(self, shape, dims):
+        kwargs = {'normalized_shape': shape[-dims:]}
+        name = str(kwargs)
+        self.helper._test_weight_and_bias_module(
+            test_name=name,
+            module='LayerNorm',
+            input_shape=shape,
+            torch_kwargs=kwargs,
+            tensorgrad_kwargs=kwargs,
+            tol=1e-4,
+        )
+    
+    @parameterized.expand([
         [(2, 4, 8), (2, 4, 8), 1, None],
         [(2, 4, 8), (2, 4, 8), 2, None],
         [(2, 4, 8), (2, 4, 8), 2, 2],
