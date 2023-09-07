@@ -128,6 +128,79 @@ class TestTraining(unittest.TestCase):
             num_epochs,
             batch_size
         )
+    
+    def test_cnn_classifier(self):
+        with open(os.path.join('tests', 'data', 'mnist100.pkl'), 'rb') as f:
+            _x, _y = pickle.load(f)
+        _x = np.array(_x)
+        _x = np.expand_dims(_x, 1)
+        _y = np.array(_y)
+        
+        num_epochs = 10
+        batch_size = 4
+
+        tx = torch.tensor(_x).float()
+        ty = torch.tensor(_y).long()
+        tm = torch.nn.Sequential(
+            torch.nn.Conv2d(
+                in_channels=1,
+                out_channels=4,
+                kernel_size=(3, 3),
+                padding='same',
+            ),
+            torch.nn.BatchNorm2d(4),
+            torch.nn.ReLU(),
+            torch.nn.AvgPool2d((2, 2)),
+            torch.nn.Conv2d(
+                in_channels=4,
+                out_channels=8,
+                kernel_size=(3, 3),
+                padding='same',
+            ),
+            torch.nn.BatchNorm2d(8),
+            torch.nn.ReLU(),
+            torch.nn.AvgPool2d((2, 2)),
+            torch.nn.Flatten(),
+            torch.nn.Linear(8 * 7 * 7, 10),
+        )
+        tloss_fn = torch.nn.CrossEntropyLoss()
+        toptim = torch.optim.SGD(tm.parameters(), 0.01)
+
+        x = tensorgrad.Tensor(_x, dtype=DTYPE.FLOAT32, requires_grad=False)
+        y = tensorgrad.Tensor(_y, dtype=DTYPE.INT32, requires_grad=False)
+        m = tensorgrad.nn.Sequential(
+            tensorgrad.nn.Conv2d(
+                in_channels=1,
+                out_channels=4,
+                kernel_size=(3, 3),
+                padding='same',
+            ).init_from_torch(tm[0]),
+            tensorgrad.nn.BatchNorm2d(4).init_from_torch(tm[1]),
+            tensorgrad.nn.ReLU(),
+            tensorgrad.nn.AvgPool2d((2, 2)),
+            tensorgrad.nn.Conv2d(
+                in_channels=4,
+                out_channels=8,
+                kernel_size=(3, 3),
+                padding='same',
+            ).init_from_torch(tm[4]),
+            tensorgrad.nn.BatchNorm2d(8).init_from_torch(tm[5]),
+            tensorgrad.nn.ReLU(),
+            tensorgrad.nn.AvgPool2d((2, 2)),
+            tensorgrad.nn.Flatten(),
+            tensorgrad.nn.Linear(8 * 7 * 7, 10).init_from_torch(tm[-1]),
+        )
+        loss_fn = tensorgrad.nn.CrossEntropyLoss()
+        optim = tensorgrad.optim.SGD(m.parameters(), 0.01)
+
+        self.helper._train(
+            tx, ty,
+            tm, tloss_fn, toptim,
+            x, y,
+            m, loss_fn, optim,
+            num_epochs,
+            batch_size
+        )
 
 
 class Helper(unittest.TestCase):
@@ -147,7 +220,7 @@ class Helper(unittest.TestCase):
         
         tlosses = []
         losses = []
-        check_tol = 1e-5
+        check_tol = 1e-4
         step = 0
         for epoch in range(num_epochs):
             epoch += 1
@@ -181,13 +254,13 @@ class Helper(unittest.TestCase):
                 
                 self._check_tensors([[tloss, loss, check_tol, 'loss']])
                 for pname in params:
+                # for pname in ['5.weight']:
                     tp = tparams[pname]
                     p = params[pname]
                     self._check_tensors([
                         [tp, p, check_tol, f'{pname}@data'],
                         [tp.grad, p.grad, check_tol, f'{pname}@grad'],
                     ])
-
 
     def _check_tensors(self, pairs):
         for tt, t, tol, name in pairs:

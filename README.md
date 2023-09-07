@@ -29,6 +29,7 @@ PROBLEMS:
 - [x] numpy export for cpu ops is lame atm
 - [irrelevant] save stuff for backward during forward
 - [x] support multidim reductions (this will also speedup batchnorm2d)
+- [] maxpool2d fast seems to produce incorrect backward if used in any model (conv-bn-relu-pool).
 
 TORCH API NOT IMPLEMENTED YET:
 - [x] Parameter type
