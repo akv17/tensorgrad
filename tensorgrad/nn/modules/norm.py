@@ -36,6 +36,7 @@ class _GeneralizedNorm(Module, ABC):
             dtype=self.bias.dtype,
             device=self.bias.device
         )
+        return self
     
     def reset_parameters(self):
         init.ones(self.weight)

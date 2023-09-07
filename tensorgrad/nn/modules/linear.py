@@ -103,6 +103,7 @@ class Conv2d(Module):
                 dtype=self.bias.dtype,
                 device=self.bias.device
             )
+        return self
     
     def reset_parameters(self):
         init.uniform_fan_in(self.weight)

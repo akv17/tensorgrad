@@ -135,6 +135,7 @@ class TestNN(unittest.TestCase):
         [(2, 3, 32, 32), 2, (2, 2), 1],
         [(2, 3, 32, 32), 2, (2, 2), (1, 1)],
         [(2, 3, 32, 32), (4, 4), 4, 0],
+        [(4, 16, 26, 26), (26, 26), None, 0],
     ])
     def test_max_pool2d(
         self,
@@ -280,6 +281,21 @@ class TestNN(unittest.TestCase):
     ])
     def test_dropout(self, shape, p):
         self.helper._test_dropout(shape=shape, p=p)
+    
+    @parameterized.expand([
+        [(2, 4)],
+        [(2, 4, 8)],
+        [(2, 4, 8, 16)],
+    ])
+    def test_flatten(self, shape):
+        name = f'{shape}'
+        self.helper._test_module_without_params(
+            test_name=name,
+            module='Flatten',
+            input_shape=shape,
+            torch_kwargs={},
+            tensorgrad_kwargs={},
+        )
 
     @parameterized.expand([
         [(2, 1)],

@@ -1,3 +1,6 @@
+import functools
+import operator
+
 from .base import Module, Parameter
 from .. import init
 
@@ -46,3 +49,15 @@ class Dropout(Module):
         # positions with True in the original bool mask are meant to be zeroed out.
         mask = (~x.bernoulli(p=self.p, shape=x.shape)).float()
         return mask
+
+
+class Flatten(Module):
+    
+    def forward(self, x):
+        batch_size = x.shape[0]
+        num_features = functools.reduce(operator.mul, x.shape[1:], 1)
+        x = x.reshape(batch_size, num_features)
+        return x
+    
+    def init_from_torch(self, module):
+        pass

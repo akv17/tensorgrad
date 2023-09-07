@@ -472,6 +472,7 @@ class TestOps(unittest.TestCase):
         [2, (8, 8), (4, 4), 3, (4, 4), (0, 0)],
         [2, (8, 8), (4, 4), 3, (4, 4), (2, 2)],
         [2, (8, 8), (4, 4), 16, (4, 4), (0, 0)],
+        [4, (28, 28), (28, 28), 4, (28, 28), (0, 0)],
         # trigger usage of slow implementation because of not evenly tiled input.
         [2, (8, 8), (4, 4), 16, (2, 1), (1, 2)],
 
