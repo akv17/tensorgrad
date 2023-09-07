@@ -76,7 +76,7 @@ class Conv2D(BaseOp, NumpyProvider):
         # windows into input of shape: B x IC x OH x OW x KH x KW.
         # basically this is a collection of all windows to which kernel is applied.
         # kernel is multiplied and reduced with each such window.
-        w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
+        w = conv2d_extract_windows(np, x, oh, ow, kh, kw, sh, sw)
         o = np.einsum('bihwkl,oikl->bohw', w, k, optimize=True)
         o += b.reshape(1, -1, 1, 1)
         return o
@@ -95,7 +95,7 @@ class Conv2D(BaseOp, NumpyProvider):
         # finally grad is computed effectively as conv2d(x=upstream_modified, k=kernel_modified).
         udh = sh - 1
         udw = sw - 1
-        _u = conv2d_dilate(u, udh, udw)
+        _u = conv2d_dilate(np, u, udh, udw)
         uph = kh - 1
         upw = kw - 1
         _u = np.pad(_u, [(0, 0), (0, 0), (uph, uph), (upw, upw)])
@@ -105,7 +105,7 @@ class Conv2D(BaseOp, NumpyProvider):
         # note that IH and IW are padded according to padding applied in forward pass.
         # kernel is multiplied and reduced with each such window.
         # finally we cancel padding by slicing off pads.
-        w = conv2d_extract_windows(_u, ihp, iwp, kh, kw, 1, 1)
+        w = conv2d_extract_windows(np, _u, ihp, iwp, kh, kw, 1, 1)
         g = np.einsum('bohwkl,oikl->bihw', w, _k, optimize=True)
         
         if ph != 0:
@@ -127,7 +127,7 @@ class Conv2D(BaseOp, NumpyProvider):
         # windows into input of same shape as in forward.
         # via einsum each such window is multiplied with corresponding pixel in the upstream.
         # then the result is reduced over batch, `kh` and `kw` dims of each input window.
-        w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
+        w = conv2d_extract_windows(np, x, oh, ow, kh, kw, sh, sw)
         g = np.einsum('bihwkl,bohw->oikl', w, u, optimize=True)
         return g
 

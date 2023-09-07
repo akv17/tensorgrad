@@ -37,7 +37,8 @@ def generate_cases(*args):
 def get_device():
     device = os.getenv('DEVICE', 'cpu')
     return {
-        'cpu': DEVICE.CPU
+        'cpu': DEVICE.CPU,
+        'cuda': DEVICE.CUDA,
     }[device]
 
 
