@@ -32,8 +32,8 @@ PROBLEMS:
 
 TORCH API NOT IMPLEMENTED YET:
 - [x] Parameter type
-- [] auto detection of Module params
-- [] auto naming of Module params
+- [x] auto detection of Module params
+- [x] auto naming of Module params
 - [x] no_grad
 - [] train / eval
 - [] save

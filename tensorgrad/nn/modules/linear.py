@@ -38,6 +38,7 @@ class Linear(Module):
                 dtype=self.bias.dtype,
                 device=self.bias.device
             )
+        return self
 
     def reset_parameters(self):
         init.uniform_fan_in(self.weight)
@@ -212,6 +213,7 @@ class MultiheadAttention(Module):
         self.k_weight = Parameter(k_weight, dtype=dtype, device=device)
         self.v_weight = Parameter(v_weight, dtype=dtype, device=device)
         self.o_weight = Parameter(out_weight, dtype=dtype, device=device)
+        return self
 
     def _check_input(self, query, key, value, attn_mask=None):
         if query.ndim != 3:
