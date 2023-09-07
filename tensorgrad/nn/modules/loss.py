@@ -1,6 +1,4 @@
-import math
-from .base import Module, Parameter
-from .. import init
+from .base import Module
 
 
 class CrossEntropyLoss(Module):
@@ -17,9 +15,6 @@ class CrossEntropyLoss(Module):
         reduced = getattr(pred, self.reduction)()
         loss = -reduced
         return loss
-    
-    def init_from_torch(self, module):
-        pass
 
     def _check_input(self, outputs, targets):
         if outputs.ndim != 2:
@@ -36,7 +31,6 @@ class CrossEntropyLoss(Module):
             raise Exception(msg)
 
 
-
 class MSELoss(Module):
 
     def __init__(self, reduction='mean'):
@@ -46,6 +40,3 @@ class MSELoss(Module):
     def forward(self, outputs, targets):
         loss = ((outputs - targets) ** 2).mean()
         return loss
-    
-    def init_from_torch(self, module):
-        pass

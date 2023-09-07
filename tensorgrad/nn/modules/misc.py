@@ -28,6 +28,7 @@ class Embedding(Module):
             dtype=self.weight.dtype,
             device=self.weight.device,
         )
+        return self
 
 
 class Dropout(Module):
@@ -40,9 +41,6 @@ class Dropout(Module):
         mask = self._generate_mask(x)
         x *= mask * self.scale
         return x
-    
-    def init_from_torch(self, module):
-        pass
     
     def _generate_mask(self, x):
         # we invert mask and cast it to float to perform masking via elementwise multiplication.
@@ -58,6 +56,3 @@ class Flatten(Module):
         num_features = functools.reduce(operator.mul, x.shape[1:], 1)
         x = x.reshape(batch_size, num_features)
         return x
-    
-    def init_from_torch(self, module):
-        pass

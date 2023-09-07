@@ -21,6 +21,3 @@ class Sequential(Module):
         for m in self._modules.values():
             x = m(x)
         return x
-
-    def init_from_torch(self, module):
-        return super().init_from_torch(module)

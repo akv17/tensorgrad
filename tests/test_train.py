@@ -254,7 +254,6 @@ class Helper(unittest.TestCase):
                 
                 self._check_tensors([[tloss, loss, check_tol, 'loss']])
                 for pname in params:
-                # for pname in ['5.weight']:
                     tp = tparams[pname]
                     p = params[pname]
                     self._check_tensors([

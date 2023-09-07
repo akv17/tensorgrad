@@ -32,8 +32,8 @@ class Module(ABC):
     @abstractmethod
     def forward(self, *args, **kwargs): pass
 
-    @abstractmethod
-    def init_from_torch(self, module): pass
+    def init_from_torch(self, module):
+        pass
 
     def parameters(self):
         return list(self.named_parameters().values())
