@@ -38,8 +38,9 @@ class Dropout(Module):
         self.scale = 1.0 / (1.0 - self.p)
     
     def forward(self, x):
-        mask = self._generate_mask(x)
-        x *= mask * self.scale
+        if self.training:
+            mask = self._generate_mask(x)
+            x *= mask * self.scale
         return x
     
     def _generate_mask(self, x):

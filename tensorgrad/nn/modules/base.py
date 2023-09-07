@@ -16,6 +16,7 @@ class Module(ABC):
     def __init__(self):
         self._parameters = {}
         self._modules = {}
+        self.training = False
 
     def __setattr__(self, name, value):
         if isinstance(value, Parameter):
@@ -31,6 +32,16 @@ class Module(ABC):
 
     @abstractmethod
     def forward(self, *args, **kwargs): pass
+
+    def train(self):
+        self.training = True
+        for m in self._modules.values():
+            m.train()
+    
+    def eval(self):
+        self.training = False
+        for m in self._modules.values():
+            m.eval()
 
     def init_from_torch(self, module):
         pass
@@ -58,5 +69,5 @@ class Module(ABC):
                 smk = f'{mn}.{smn}'
                 kv[smk] = sm
         return kv
-        
+    
     def _check_input(self, *args, **kwargs): pass
