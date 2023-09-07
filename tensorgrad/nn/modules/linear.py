@@ -1,6 +1,7 @@
 import math
 from .base import Module, Parameter
 from .. import init
+from ...const import DTYPE
 
 
 class Linear(Module):
@@ -214,16 +215,19 @@ class MultiheadAttention(Module):
 
     def _check_input(self, query, key, value, attn_mask=None):
         if query.ndim != 3:
-            msg = f'expected query to have 3 dimensions but got {query.ndim} dimensions.'
+            msg = f'expected query to have 3 dimensions but got {query.ndim}.'
             raise Exception(msg)
         if key.ndim != 3:
-            msg = f'expected key to have 3 dimensions but got {key.ndim} dimensions.'
+            msg = f'expected key to have 3 dimensions but got {key.ndim}.'
             raise Exception(msg)
         if value.ndim != 3:
-            msg = f'expected value to have 3 dimensions but got {value.ndim} dimensions.'
+            msg = f'expected value to have 3 dimensions but got {value.ndim}'
+            raise Exception(msg)
+        if attn_mask is not None and attn_mask.dtype is not DTYPE.BOOL:
+            msg = f'expected attn_mask of type {DTYPE.BOOL} but got {attn_mask.dtype}.'
             raise Exception(msg)
         if attn_mask is not None and attn_mask.ndim not in (2, 3):
-            msg = f'expected attn_mask to have 2 or 3 dimensions but got {attn_mask.ndim} dimensions.'
+            msg = f'expected attn_mask to have 2 or 3 dimensions but got {attn_mask.ndim}.'
             raise Exception(msg)
         if key.shape[1] != value.shape[1]:
             msg = f'expected key and value to have same sequence length but got {(key.shape[1], value.shape[1])}.'

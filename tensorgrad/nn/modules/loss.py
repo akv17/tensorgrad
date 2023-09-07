@@ -21,6 +21,21 @@ class CrossEntropyLoss(Module):
     def init_from_torch(self, module):
         pass
 
+    def _check_input(self, outputs, targets):
+        if outputs.ndim != 2:
+            msg = f'expected outputs to have 2 dimensions but got {outputs.ndim}.'
+            raise Exception(msg)
+        if targets.ndim != 1:
+            msg = f'expected targets to have 1 dimension but got {targets.ndim}.'
+            raise Exception(msg)
+        if outputs.shape[0] != targets.shape[0]:
+            msg = f'expected outputs and targets to have same number of samples but got {(outputs.shape[0], targets.shape[0])}.'
+            raise Exception(msg)
+        if outputs.shape[0] != targets.shape[0]:
+            msg = f'expected outputs and targets to have same number of samples but got {(outputs.shape[0], targets.shape[0])}.'
+            raise Exception(msg)
+
+
 
 class MSELoss(Module):
 
