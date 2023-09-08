@@ -3,8 +3,6 @@ utilities to auto-generate numpy-based ops with specific numpy-compatible runtim
 currently NumPy runtime powers CPU ops while CuPy runtime powers CUDA ops.
 """
 
-import importlib
-
 from .activation import *
 from .binary import *
 from .conv2d import *
@@ -41,24 +39,3 @@ class OpGenerator:
 
     def _register_op(self, op, name):
         OpDispatch.register(name, self.device)(op)
-
-
-class RuntimeProvider:
-
-    def __init__(self, impl, device):
-        self.impl = impl
-        self.device = device
-        self.__impl = None
-
-    def __getattr__(self, name):
-        self.__import_maybe()
-        return getattr(self.__impl, name)
-    
-    def __import_maybe(self):
-        if self.__impl is None:
-            try:
-                impl = importlib.import_module(self.impl)
-                self.__impl = impl
-            except ImportError:
-                msg = f'Implementation of \'{self.device}\' device is not available: \'{self.impl}\' not installed.'
-                raise ImportError(msg)
