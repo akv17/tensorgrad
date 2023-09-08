@@ -351,7 +351,7 @@ class Helper(unittest.TestCase):
         to = tm(tx)
         self._backward_torch(to)
 
-        x = tensorgrad.Tensor(_x, dtype=DTYPE, name='x', requires_grad=True)
+        x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, requires_grad=True)
         m = getattr(tensorgrad.nn, module)(**tensorgrad_kwargs)
         m.init_from_torch(tm)
         m.to(DEVICE)
@@ -385,7 +385,7 @@ class Helper(unittest.TestCase):
         to = tm(tx)
         self._backward_torch(to)
 
-        x = tensorgrad.Tensor(_x, dtype=DTYPE, name='x', requires_grad=True)
+        x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
         m = getattr(tensorgrad.nn, module)(**tensorgrad_kwargs)
         m.to(DEVICE)
         o = m(x)
@@ -429,10 +429,10 @@ class Helper(unittest.TestCase):
         to, _ = tm(tq, tk, tv, attn_mask=tattn_mask)
         self._backward_torch(to)
 
-        q = tensorgrad.Tensor(_q, dtype=DTYPE, requires_grad=True)
-        k = tensorgrad.Tensor(_k, dtype=DTYPE, requires_grad=True)
-        v = tensorgrad.Tensor(_v, dtype=DTYPE, requires_grad=True)
-        attn_mask = tensorgrad.Tensor(_attn_mask, dtype=DTYPE.BOOL, requires_grad=False) if _attn_mask is not None else None
+        q = tensorgrad.Tensor(_q, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        k = tensorgrad.Tensor(_k, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        v = tensorgrad.Tensor(_v, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        attn_mask = tensorgrad.Tensor(_attn_mask, dtype=DTYPE.BOOL, device=DEVICE, requires_grad=False) if _attn_mask is not None else None
         m = tensorgrad.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads)
         m.init_from_torch(tm)
         m.to(DEVICE)
@@ -460,7 +460,7 @@ class Helper(unittest.TestCase):
         to = tm(tx)
         self._backward_torch(to)
 
-        x = tensorgrad.Tensor(_x, dtype=DTYPE.INT32, name='x', requires_grad=False)
+        x = tensorgrad.Tensor(_x, dtype=DTYPE.INT32, device=DEVICE, name='x', requires_grad=False)
         m = tensorgrad.nn.Embedding(num_embeddings=num_embeddings, embedding_dim=embedding_dim)
         m.init_from_torch(tm)
         m.to(DEVICE)
@@ -480,17 +480,18 @@ class Helper(unittest.TestCase):
         tdtype = getattr(torch, DTYPE.value)
         tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
         tm = torch.nn.Dropout(p)
+        tm.train()
         to = tm(tx)
         tmask = to == 0.0
         self._backward_torch(to)
 
-
-        x = tensorgrad.Tensor(_x, dtype=DTYPE, name='x', requires_grad=True)
+        x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
         m = tensorgrad.nn.Dropout(p)
         m.to(DEVICE)
+        m.train()
         # monkeypatch mask generation to apply exactly the same mask as applied by torch.
         mask = tmask.detach().cpu().numpy()
-        mask = tensorgrad.Tensor(mask, dtype=DTYPE.BOOL, requires_grad=False)
+        mask = tensorgrad.Tensor(mask, dtype=DTYPE.BOOL, device=DEVICE, requires_grad=False)
         m._generate_mask = lambda __x: (~mask).float()
         o = m(x)
         self._backward_tensorgrad(o)
