@@ -1,11 +1,11 @@
+from .base import NumpyOp
+from .util.grad import accumulate_broadcasted_grad
 from ..stubs import BinaryOp
-from ..dispatch import OpDispatch
-from ..util import accumulate_broadcasted_grad
-from ...const import OP, DEVICE
+from ...const import OP
 
 
-@OpDispatch.register(OP.ADD, DEVICE.CPU)
-class Add(BinaryOp):
+class Add(BinaryOp, NumpyOp):
+    _NAME = OP.ADD 
 
     def forward(self):
         o = self.a.data + self.b.data
@@ -15,16 +15,16 @@ class Add(BinaryOp):
     def backward(self):
         if self.a.requires_grad:
             a_grad = self.out.grad
-            a_grad = accumulate_broadcasted_grad(self.a, a_grad)
+            a_grad = accumulate_broadcasted_grad(self.np, self.a, a_grad)
             self.a.grad += a_grad
         if self.b.requires_grad:
             b_grad = self.out.grad
-            b_grad = accumulate_broadcasted_grad(self.b, b_grad)
+            b_grad = accumulate_broadcasted_grad(self.np, self.b, b_grad)
             self.b.grad += b_grad
 
 
-@OpDispatch.register(OP.SUB, DEVICE.CPU)
-class Sub(BinaryOp):
+class Sub(BinaryOp, NumpyOp):
+    _NAME = OP.SUB
 
     def forward(self):
         data = self.a.data - self.b.data
@@ -34,16 +34,16 @@ class Sub(BinaryOp):
     def backward(self):
         if self.a.requires_grad:
             a_grad = self.out.grad
-            a_grad = accumulate_broadcasted_grad(self.a, a_grad)
+            a_grad = accumulate_broadcasted_grad(self.np, self.a, a_grad)
             self.a.grad += a_grad
         if self.b.requires_grad:
             b_grad = -1.0 * self.out.grad
-            b_grad = accumulate_broadcasted_grad(self.b, b_grad)
+            b_grad = accumulate_broadcasted_grad(self.np, self.b, b_grad)
             self.b.grad += b_grad
 
 
-@OpDispatch.register(OP.MUL, DEVICE.CPU)
-class Mul(BinaryOp):
+class Mul(BinaryOp, NumpyOp):
+    _NAME = OP.MUL
 
     def forward(self):
         data = self.a.data * self.b.data
@@ -53,16 +53,16 @@ class Mul(BinaryOp):
     def backward(self):
         if self.a.requires_grad:
             a_grad = self.b.data * self.out.grad
-            a_grad = accumulate_broadcasted_grad(self.a, a_grad)
+            a_grad = accumulate_broadcasted_grad(self.np, self.a, a_grad)
             self.a.grad += a_grad
         if self.b.requires_grad:
             b_grad = self.a.data * self.out.grad
-            b_grad = accumulate_broadcasted_grad(self.b, b_grad)
+            b_grad = accumulate_broadcasted_grad(self.np, self.b, b_grad)
             self.b.grad += b_grad
 
 
-@OpDispatch.register(OP.DIV, DEVICE.CPU)
-class Div(BinaryOp):
+class Div(BinaryOp, NumpyOp):
+    _NAME = OP.DIV
 
     def forward(self):
         data = self.a.data / self.b.data
@@ -72,9 +72,9 @@ class Div(BinaryOp):
     def backward(self):
         if self.a.requires_grad:
             a_grad = 1.0 / self.b.data * self.out.grad
-            a_grad = accumulate_broadcasted_grad(self.a, a_grad)
+            a_grad = accumulate_broadcasted_grad(self.np, self.a, a_grad)
             self.a.grad += a_grad
         if self.b.requires_grad:
             b_grad = (-self.a.data / (self.b.data ** 2)) * self.out.grad
-            b_grad = accumulate_broadcasted_grad(self.b, b_grad)
+            b_grad = accumulate_broadcasted_grad(self.np, self.b, b_grad)
             self.b.grad += b_grad

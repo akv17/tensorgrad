@@ -1,11 +1,10 @@
-from .util.np import NumpyProvider
+from .base import NumpyOp
 from ..stubs import BaseOp, UnaryOp
-from ..dispatch import OpDispatch
-from ...const import OP, DEVICE, DTYPE
+from ...const import OP, DTYPE
 
 
-@OpDispatch.register(OP.POW, DEVICE.CPU)
-class Pow(BaseOp):
+class Pow(BaseOp, NumpyOp):
+    _NAME = OP.POW
     
     def __init__(self, x, *, value):
         self.out = None
@@ -23,8 +22,8 @@ class Pow(BaseOp):
             self.x.grad += (n * self.x.data ** (n-1)) * self.out.grad
 
 
-@OpDispatch.register(OP.EXP, DEVICE.CPU)
-class Exp(UnaryOp, NumpyProvider):
+class Exp(UnaryOp, NumpyOp):
+    _NAME = OP.EXP
     
     def forward(self):
         data = self.np.exp(self.x.data)
@@ -36,8 +35,8 @@ class Exp(UnaryOp, NumpyProvider):
             self.x.grad += self.out.data * self.out.grad
 
 
-@OpDispatch.register(OP.LOG, DEVICE.CPU)
-class Log(UnaryOp, NumpyProvider):
+class Log(UnaryOp, NumpyOp):
+    _NAME = OP.LOG
     
     def forward(self):
         data = self.np.log(self.x.data)
@@ -49,8 +48,8 @@ class Log(UnaryOp, NumpyProvider):
             self.x.grad += 1.0 / self.x.data * self.out.grad
 
 
-@OpDispatch.register(OP.INVERT, DEVICE.CPU)
-class Invert(UnaryOp):
+class Invert(UnaryOp, NumpyOp):
+    _NAME = OP.INVERT
     # tested via `nn.Dropout`
     
     def forward(self):

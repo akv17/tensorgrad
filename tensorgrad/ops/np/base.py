@@ -1,0 +1,2 @@
+class NumpyOp:
+    np = None

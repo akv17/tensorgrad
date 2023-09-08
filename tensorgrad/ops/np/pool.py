@@ -1,14 +1,13 @@
 import warnings
 
-from .util.np import NumpyProvider
+from .base import NumpyOp
 from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, conv2d_dilate
 from ..stubs import BaseOp
-from ..dispatch import OpDispatch
-from ...const import OP, DEVICE
+from ...const import OP
 
 
-@OpDispatch.register(OP.MAX_POOL2D, DEVICE.CPU)
-class MaxPool2D(BaseOp, NumpyProvider):
+class MaxPool2D(BaseOp, NumpyOp):
+    _NAME = OP.MAX_POOL2D
 
     def __init__(self, x, *, kernel_size, stride=None, padding=None):
         self.x = x
@@ -185,8 +184,8 @@ class MaxPool2D(BaseOp, NumpyProvider):
         return _jit_max_pool2d_backward
 
 
-@OpDispatch.register(OP.AVG_POOL2D, DEVICE.CPU)
-class AvgPool2D(BaseOp, NumpyProvider):
+class AvgPool2D(BaseOp, NumpyOp):
+    _NAME = OP.AVG_POOL2D
 
     def __init__(self, x, *, kernel_size, stride=None, padding=None):
         self.x = x

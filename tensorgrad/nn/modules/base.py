@@ -33,6 +33,12 @@ class Module(ABC):
     @abstractmethod
     def forward(self, *args, **kwargs): pass
 
+    def to(self, device):
+        breakpoint()
+        self._parameters = {k: v.to(device) for k, v in self._parameters.items()}
+        for m in self._modules.values():
+            m.to(device)
+
     def train(self):
         self.training = True
         for m in self._modules.values():

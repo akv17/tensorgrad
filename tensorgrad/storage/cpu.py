@@ -1,8 +1,9 @@
 from ..const import DTYPE, DEVICE
 
+_NUMPY = None
+
 
 class CPUStorage:
-    _NUMPY = None
 
     @classmethod
     def tensor(cls, data, dtype=None):
@@ -98,7 +99,8 @@ class CPUStorage:
 
     @classmethod
     def _get_numpy(cls):
-        if cls._NUMPY is None:
+        global _NUMPY
+        if _NUMPY is None:
             import numpy
-            cls._NUMPY = numpy
-        return cls._NUMPY
+            _NUMPY = numpy
+        return _NUMPY

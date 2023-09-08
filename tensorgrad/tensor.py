@@ -269,6 +269,9 @@ class Tensor:
         data = self._storage.ones(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
+    def to(self, device):
+        return self._copy_partial(device=device)
+
     def float(self):
         data = self._storage.cast(self.data, dtype=DTYPE.FLOAT32)
         return self._copy_partial(data=data, dtype=DTYPE.FLOAT32)

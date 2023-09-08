@@ -1,14 +1,13 @@
-from .util.np import NumpyProvider
+from .base import NumpyOp
 from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, conv2d_dilate
 from ..stubs import BaseOp
-from ..dispatch import OpDispatch
-from ...const import OP, DEVICE
+from ...const import OP
 
 
-@OpDispatch.register(OP.CONV2D, DEVICE.CPU)
-class Conv2D(BaseOp, NumpyProvider):
+class Conv2D(BaseOp, NumpyOp):
     # this op heavily uses np.einsum as it's significantly faster than 2d matmuls with reshapes.
-    # also it turns out that multidim tensor matmuls are ridiculously slow.
+    
+    _NAME = OP.CONV2D
 
     def __init__(self, x, kernel, bias=None, *, stride=None, padding=None):
         self.out = None

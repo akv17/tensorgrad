@@ -1,10 +1,9 @@
 import operator
 import functools
 
-from .util.np import NumpyProvider
+from .base import NumpyOp
 from ..stubs import ReduceOp
-from ..dispatch import OpDispatch
-from ...const import OP, DEVICE
+from ...const import OP
 
 
 class _KeepdimMixin:
@@ -35,8 +34,8 @@ class _KeepdimMixin:
         return u
 
 
-@OpDispatch.register(OP.SUM_REDUCE, DEVICE.CPU)
-class SumReduce(ReduceOp, _KeepdimMixin):
+class SumReduce(ReduceOp, NumpyOp, _KeepdimMixin):
+    _NAME = OP.SUM_REDUCE
     
     def forward(self):
         data = self.x.data.sum(self.dim, keepdims=self.keepdim)
@@ -49,8 +48,8 @@ class SumReduce(ReduceOp, _KeepdimMixin):
             self.x.grad += u
 
 
-@OpDispatch.register(OP.MEAN_REDUCE, DEVICE.CPU)
-class MeanReduce(ReduceOp, _KeepdimMixin):
+class MeanReduce(ReduceOp, NumpyOp, _KeepdimMixin):
+    _NAME = OP.MEAN_REDUCE
 
     def forward(self):
         data = self.x.data.mean(self.dim, keepdims=self.keepdim)
@@ -64,7 +63,7 @@ class MeanReduce(ReduceOp, _KeepdimMixin):
             self.x.grad += 1.0 / size * u
     
 
-class _MinMaxReduce(ReduceOp, NumpyProvider):
+class _MinMaxReduce(ReduceOp, NumpyOp):
     # this implementation is pretty obscure because of interoperability between numpy and cupy.
     # in numpy this could have been done easily via argmax and put_along_axis in backward.
     # in cupy there is no put_along_axis so we need another implementation.
@@ -152,11 +151,11 @@ class _MinMaxReduce(ReduceOp, NumpyProvider):
         self._shapet = shapet
 
 
-@OpDispatch.register(OP.MAX_REDUCE, DEVICE.CPU)
 class MaxReduce(_MinMaxReduce):
+    _NAME = OP.MAX_REDUCE
     _FUNC = 'max'
 
 
-@OpDispatch.register(OP.MIN_REDUCE, DEVICE.CPU)
 class MinReduce(_MinMaxReduce):
+    _NAME = OP.MIN_REDUCE
     _FUNC = 'min'
