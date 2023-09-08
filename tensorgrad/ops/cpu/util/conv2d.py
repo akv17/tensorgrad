@@ -1,7 +1,5 @@
 import math
 
-# import numpy as np
-
 
 def conv2d_compute_output_size(ih, iw, kh, kw, sh, sw):
     oh = math.floor((ih - kh) / sh + 1)
@@ -24,11 +22,10 @@ def conv2d_extract_windows(np, x, oh, ow, kh, kw, sh, sw):
     return w
 
 
-def conv2d_dilate(np, x, dh, dw, ah=2, aw=3):
-    idx = np.arange(x.shape[ah] - 1) + 1
-    idx = np.repeat(idx, dh)
-    x = np.insert(x, idx, 0, axis=ah)
-    idx = np.arange(x.shape[aw] - 1) + 1
-    idx = np.repeat(idx, dw)
-    x = np.insert(x, idx, 0, axis=aw)
-    return x
+def conv2d_dilate(np, x, dh, dw):
+    b, c, h, w = x.shape
+    h += (dh * (h - 1))
+    w += (dw * (w - 1))
+    o = np.zeros((b, c, h, w), dtype=x.dtype)
+    o[..., ::dh+1, ::dw+1] = x
+    return o
