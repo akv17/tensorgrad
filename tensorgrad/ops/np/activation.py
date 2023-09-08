@@ -1,11 +1,10 @@
-from .util.np import NumpyProvider
+from .base import NumpyOp
 from ..stubs import UnaryOp
-from ..dispatch import OpDispatch
-from ...const import OP, DEVICE
+from ...const import OP
 
 
-@OpDispatch.register(OP.RELU, DEVICE.CPU)
-class ReLU(UnaryOp):
+class ReLU(UnaryOp, NumpyOp):
+    _NAME = OP.RELU
     
     def forward(self):
         data = self.x.data.copy()
@@ -21,8 +20,8 @@ class ReLU(UnaryOp):
             self.x.grad += u
 
 
-@OpDispatch.register(OP.SIGMOID, DEVICE.CPU)
-class Sigmoid(UnaryOp, NumpyProvider):
+class Sigmoid(UnaryOp, NumpyOp):
+    _NAME = OP.SIGMOID
 
     def forward(self):
         data = 1.0 / (1.0 + self.np.exp(-self.x.data))

@@ -1,7 +1,4 @@
-import numpy as np
-
-
-def accumulate_broadcasted_grad(x, g):
+def accumulate_broadcasted_grad(np, x, g):
     """accumulates grad `g` of `x` over broadcasted dims of `x`"""
     g = g.copy()
     x_shape = x.shape

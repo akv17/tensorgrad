@@ -1,11 +1,10 @@
-from .util.np import NumpyProvider
+from .base import NumpyOp
 from ..stubs import BaseOp
-from ..dispatch import OpDispatch
-from ...const import OP, DEVICE
+from ...const import OP
 
 
-@OpDispatch.register(OP.SQUEEZE, DEVICE.CPU)
-class Squeeze(BaseOp, NumpyProvider):
+class Squeeze(BaseOp, NumpyOp):
+    _NAME = OP.SQUEEZE
 
     def __init__(self, x, *, dim):
         self.out = None
@@ -22,8 +21,8 @@ class Squeeze(BaseOp, NumpyProvider):
             self.x.grad += self.np.expand_dims(self.out.grad, self.dim)
 
 
-@OpDispatch.register(OP.UNSQUEEZE, DEVICE.CPU)
-class Unsqueeze(BaseOp, NumpyProvider):
+class Unsqueeze(BaseOp, NumpyOp):
+    _NAME = OP.UNSQUEEZE
     
     def __init__(self, x, *, dim):
         self.out = None
@@ -40,8 +39,8 @@ class Unsqueeze(BaseOp, NumpyProvider):
             self.x.grad += self.np.squeeze(self.out.grad, self.dim)
 
 
-@OpDispatch.register(OP.RESHAPE, DEVICE.CPU)
-class Reshape(BaseOp):
+class Reshape(BaseOp, NumpyOp):
+    _NAME = OP.RESHAPE
 
     def __init__(self, x, *, shape):
         self.out = None
@@ -58,8 +57,8 @@ class Reshape(BaseOp):
             self.x.grad += self.out.grad.reshape(self.x.grad.shape)
 
 
-@OpDispatch.register(OP.PERMUTE, DEVICE.CPU)
-class Permute(BaseOp, NumpyProvider):
+class Permute(BaseOp, NumpyOp):
+    _NAME = OP.PERMUTE
 
     def __init__(self, x, *, dims):
         self.out = None
@@ -77,8 +76,8 @@ class Permute(BaseOp, NumpyProvider):
             self.x.grad += self.np.transpose(self.out.grad, self.dims_grad)
 
 
-@OpDispatch.register(OP.CONCAT, DEVICE.CPU)
-class Concat(BaseOp, NumpyProvider):
+class Concat(BaseOp, NumpyOp):
+    _NAME = OP.CONCAT
 
     def __init__(self, x, *, dim):
         self.x = x

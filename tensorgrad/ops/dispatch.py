@@ -8,6 +8,7 @@ class OpDispatch:
     def execute(cls, op, *args, **kwargs):
         inputs = args
         inputs = cls._unpack_inputs_maybe(inputs)
+        cls._check_inputs_on_same_device(op=op, inputs=inputs)
         device = inputs[0].device
         requires_grad = any(i.requires_grad for i in inputs)
         key = (op, device)
@@ -44,3 +45,13 @@ class OpDispatch:
             i = [i] if not isinstance(i, (list, tuple)) else i
             accum.extend(i)
         return accum
+
+    @classmethod
+    def _check_inputs_on_same_device(cls, op, inputs):
+        device = None
+        for i, inp in enumerate(inputs):
+            if device is None:
+                device = inp.device
+            if inp.device != device:
+                msg = f'Expected all inputs of {op} on the same device but got ({device, inp.device})'
+                raise Exception(msg)

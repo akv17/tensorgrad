@@ -1,11 +1,10 @@
-from .util.np import NumpyProvider
+from .base import NumpyOp
 from ..stubs import BaseOp
-from ..dispatch import OpDispatch
-from ...const import OP, DEVICE
+from ...const import OP
 
 
-@OpDispatch.register(OP.SELECT, DEVICE.CPU)
-class Select(BaseOp, NumpyProvider):
+class Select(BaseOp, NumpyOp):
+    _NAME = OP.SELECT
 
     def __init__(self, x, *, slice_):
         self.out = None
@@ -24,9 +23,10 @@ class Select(BaseOp, NumpyProvider):
             self.x.grad += grad
 
 
-@OpDispatch.register(OP.MASKED_FILL, DEVICE.CPU)
-class MaskedFill(BaseOp):
+class MaskedFill(BaseOp, NumpyOp):
     # this op does not have a gradient.
+
+    _NAME = OP.MASKED_FILL
 
     def __init__(self, x, *, mask, value):
         self.x = x
@@ -44,8 +44,9 @@ class MaskedFill(BaseOp):
         pass
 
 
-@OpDispatch.register(OP.LOOKUP, DEVICE.CPU)
-class Lookup(BaseOp, NumpyProvider):
+class Lookup(BaseOp, NumpyOp):
+    _NAME = OP.LOOKUP
+
     # this is essentially an embedding implementation.
     # it's not possible to reuse Select for this purpose because embedding weight gradients must be accumulated.
 

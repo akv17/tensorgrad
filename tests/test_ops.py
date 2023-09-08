@@ -465,7 +465,7 @@ class TestOps(unittest.TestCase):
         if bias:
             self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
     
-    @parameterized.expand([
+    _max_pool2d_cases = [
         [2, (4, 4), (2, 2), 3, (2, 2), (0, 0)],
         [2, (8, 8), (2, 2), 3, (2, 2), (0, 0)],
         [2, (8, 8), (2, 2), 3, (2, 2), (1, 1)],
@@ -473,10 +473,11 @@ class TestOps(unittest.TestCase):
         [2, (8, 8), (4, 4), 3, (4, 4), (2, 2)],
         [2, (8, 8), (4, 4), 16, (4, 4), (0, 0)],
         [4, (28, 28), (28, 28), 4, (28, 28), (0, 0)],
+    ]
+    if DEVICE == 'cpu':
         # trigger usage of slow implementation because of not evenly tiled input.
-        [2, (8, 8), (4, 4), 16, (2, 1), (1, 2)],
-
-    ])
+        _max_pool2d_cases.append([2, (8, 8), (4, 4), 16, (2, 1), (1, 2)])
+    @parameterized.expand(_max_pool2d_cases)
     def test_max_pool2d(
         self,
         batch_size,

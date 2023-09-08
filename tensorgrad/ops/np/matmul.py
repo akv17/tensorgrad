@@ -1,12 +1,11 @@
-from .util.np import NumpyProvider
+from .base import NumpyOp
+from .util.grad import accumulate_broadcasted_grad
 from ..stubs import BinaryOp
-from ..dispatch import OpDispatch
-from ..util import accumulate_broadcasted_grad
-from ...const import OP, DEVICE
+from ...const import OP
 
 
-@OpDispatch.register(OP.MATMUL, DEVICE.CPU)
-class Matmul(BinaryOp, NumpyProvider):
+class Matmul(BinaryOp, NumpyOp):
+    _NAME = OP.MATMUL
     
     def forward(self):
         data = self.np.matmul(self.a.data, self.b.data)
@@ -29,7 +28,7 @@ class Matmul(BinaryOp, NumpyProvider):
             b = b.reshape(-1, b.shape[-2], b.shape[-1])
             b = self.np.transpose(b, ([0, 2, 1]))
             d_grad = self.np.matmul(u_grad, b)
-            d_grad = accumulate_broadcasted_grad(self.a, d_grad)
+            d_grad = accumulate_broadcasted_grad(self.np, self.a, d_grad)
             d_grad = d_grad.reshape(self.a.shape)
             self.a.grad += d_grad
         if self.b.requires_grad:
@@ -39,6 +38,6 @@ class Matmul(BinaryOp, NumpyProvider):
             a = a.reshape(-1, a.shape[-2], a.shape[-1])
             a = self.np.transpose(a, ([0, 2, 1]))
             d_grad = self.np.matmul(a, u_grad)
-            d_grad = accumulate_broadcasted_grad(self.b, d_grad)
+            d_grad = accumulate_broadcasted_grad(self.np, self.b, d_grad)
             d_grad = d_grad.reshape(self.b.shape)
             self.b.grad += d_grad

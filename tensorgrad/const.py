@@ -11,6 +11,7 @@ class DTYPE(str, Enum):
 
 class DEVICE(str, Enum):
     CPU = 'cpu'
+    CUDA = 'cuda'
 
 
 class OP(str, Enum):
@@ -23,7 +24,7 @@ class OP(str, Enum):
     POW = 'pow'
     EXP = 'exp'
     LOG = 'log'
-    SQRT = 'sqrt'
+    # SQRT = 'sqrt'
     MASKED_FILL = 'masked_fill_'
     
     SUM_REDUCE = 'sum_reduce'

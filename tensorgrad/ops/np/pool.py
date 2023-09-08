@@ -1,14 +1,13 @@
 import warnings
 
-from .util.np import NumpyProvider
+from .base import NumpyOp
 from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, conv2d_dilate
 from ..stubs import BaseOp
-from ..dispatch import OpDispatch
-from ...const import OP, DEVICE
+from ...const import OP
 
 
-@OpDispatch.register(OP.MAX_POOL2D, DEVICE.CPU)
-class MaxPool2D(BaseOp, NumpyProvider):
+class MaxPool2D(BaseOp, NumpyOp):
+    _NAME = OP.MAX_POOL2D
 
     def __init__(self, x, *, kernel_size, stride=None, padding=None):
         self.x = x
@@ -110,7 +109,7 @@ class MaxPool2D(BaseOp, NumpyProvider):
         sh, sw = self.stride
         oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
 
-        w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
+        w = conv2d_extract_windows(np, x, oh, ow, kh, kw, sh, sw)
         w = w.reshape(bs, ci, oh, ow, kh * kw)
         mask = np.argmax(w, -1)
         self._mask = mask
@@ -185,8 +184,8 @@ class MaxPool2D(BaseOp, NumpyProvider):
         return _jit_max_pool2d_backward
 
 
-@OpDispatch.register(OP.AVG_POOL2D, DEVICE.CPU)
-class AvgPool2D(BaseOp, NumpyProvider):
+class AvgPool2D(BaseOp, NumpyOp):
+    _NAME = OP.AVG_POOL2D
 
     def __init__(self, x, *, kernel_size, stride=None, padding=None):
         self.x = x
@@ -209,7 +208,7 @@ class AvgPool2D(BaseOp, NumpyProvider):
         sh, sw = self.stride
         oh, ow = conv2d_compute_output_size(ih, iw, kh, kw, sh, sw)
         
-        w = conv2d_extract_windows(x, oh, ow, kh, kw, sh, sw)
+        w = conv2d_extract_windows(np, x, oh, ow, kh, kw, sh, sw)
         w = w.reshape(bs, ci, oh, ow, kh * kw)
         o = w.mean(-1)
         self.out = self.x.from_data(o)
@@ -238,13 +237,13 @@ class AvgPool2D(BaseOp, NumpyProvider):
         
         udh = sh - 1
         udw = sw - 1
-        _u = conv2d_dilate(u, udh, udw)
+        _u = conv2d_dilate(np, u, udh, udw)
         uph = kh - 1
         upw = kw - 1
         _u = np.pad(_u, [(0, 0), (0, 0), (uph, uph), (upw, upw)])
         _k = np.rot90(k, k=2, axes=(0, 1))
 
-        w = conv2d_extract_windows(_u, ihp, iwp, kh, kw, 1, 1)
+        w = conv2d_extract_windows(np, _u, ihp, iwp, kh, kw, 1, 1)
         g = np.einsum('bchwkl,kl->bchw', w, _k, optimize=True)
         
         if ph != 0:

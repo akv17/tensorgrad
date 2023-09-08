@@ -269,6 +269,10 @@ class Tensor:
         data = self._storage.ones(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
+    def to(self, device):
+        ob = self._copy_partial(device=device)
+        return ob
+
     def float(self):
         data = self._storage.cast(self.data, dtype=DTYPE.FLOAT32)
         return self._copy_partial(data=data, dtype=DTYPE.FLOAT32)
@@ -288,7 +292,7 @@ class Tensor:
         return self.tolist()
 
     def render(self):
-        from .render import render_graph
+        from .util.render import render_graph
         render_graph(self)
 
     def _copy_partial(self, data=None, dtype=None, device=None, requires_grad=None):

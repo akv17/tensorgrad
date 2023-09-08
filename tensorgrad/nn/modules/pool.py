@@ -29,12 +29,6 @@ class _GeneralizedPool2d(Module):
         out = op(kernel_size=self._kernel_size, stride=self._stride, padding=self._padding)
         return out
 
-    def init_from_torch(self, module):
-        pass
-    
-    def reset_parameters(self):
-        pass
-
     def _normalize_kernel_size(self):
         value = self.kernel_size
         self._kernel_size = (value, value) if isinstance(value, int) else value
