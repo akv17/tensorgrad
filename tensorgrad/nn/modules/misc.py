@@ -34,6 +34,7 @@ class Embedding(Module):
 class Dropout(Module):
 
     def __init__(self, p=0.5):
+        super().__init__()
         self.p = p
         self.scale = 1.0 / (1.0 - self.p)
     

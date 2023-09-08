@@ -34,8 +34,10 @@ class Module(ABC):
     def forward(self, *args, **kwargs): pass
 
     def to(self, device):
-        breakpoint()
-        self._parameters = {k: v.to(device) for k, v in self._parameters.items()}
+        for pn, p in self._parameters.items():
+            p = p.to(device)
+            self._parameters[pn] = p
+            setattr(self, pn, p)
         for m in self._modules.values():
             m.to(device)
 
