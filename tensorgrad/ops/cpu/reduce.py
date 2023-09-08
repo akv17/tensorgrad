@@ -65,6 +65,20 @@ class MeanReduce(ReduceOp, _KeepdimMixin):
     
 
 class _MinMaxReduce(ReduceOp, NumpyProvider):
+    # this implementation is pretty obscure because of interoperability between numpy and cupy.
+    # in numpy this could have been done easily via argmax and put_along_axis in backward.
+    # in cupy there is no put_along_axis so we need another implementation.
+    # forward:
+    # 1. move target dim as the last dim
+    # 2. reshape to 2d
+    # 3. compute argfunc over last dim
+    # backward:
+    # 1. transpose local grad
+    # 2. reshape local grad to 2d
+    # 3. fill ones into argfunc mask
+    # 4. broadcast multiply with upstream `g[i, :] *= u[i]`
+    # 5. reshape and transpose to original shape
+
     _FUNC = None
 
     def __init__(self, x, *, dim=None):
@@ -72,32 +86,70 @@ class _MinMaxReduce(ReduceOp, NumpyProvider):
         if isinstance(self.dim, (tuple, list)):
             msg = f'multi-dimensional min-max reduce is not supported.'
             raise Exception(msg)
+        
+        if self.dim is not None:
+            self.dim = self.x.ndim - abs(self.dim) if self.dim < 0 else self.dim
+            self._backward_compute_dims_and_shapes()
+        
         self.mask = None
         self._func = self._FUNC
         self._argfunc = f'arg{self._func}'
 
     def forward(self):
         x = self.x.data
-        argfunc = getattr(x, self._argfunc)
-        self.mask = argfunc(self.dim, keepdims=True)
+        if self.dim is not None:
+            _x = self.np.transpose(x, self._dimt)
+            _x = _x.reshape(-1, _x.shape[-1])
+            argfunc = getattr(_x, self._argfunc)
+            self.mask = argfunc(-1)
+        else:
+            argfunc = getattr(x, self._argfunc)
+            self.mask = argfunc()
         func = getattr(x, self._func)
-        data = func(self.dim)
-        self.out = self.x.from_data(data)
+        o = func(self.dim)
+        self.out = self.x.from_data(o)
         return self.out
 
     def backward(self):
         if self.x.requires_grad:
-            u = self.out.grad
-            g = self.np.zeros_like(self.x.data)
             if self.dim is None:
-                ix = self.mask.item()
-                ix = self.np.unravel_index(ix, self.x.shape)
-                g[ix] = 1.0
+                m = self.mask
+                u = self.out.grad
+                g = self.np.zeros_like(self.x.data)
+                i = self.np.unravel_index(m, g.shape)
+                g[i] = u
             else:
-                self.np.put_along_axis(g, self.mask, 1.0, self.dim)
-                u = self.np.expand_dims(u, self.dim)
-            g *= u
+                m = self.mask
+                u = self.out.grad
+                u = u.ravel()
+                u = self.np.expand_dims(u, -1)
+                
+                g = self.np.zeros_like(self.x.data)
+                g = self.np.transpose(g, self._dimt)
+                g = g.reshape(-1, g.shape[-1])
+                
+                g[range(len(g)), m] = 1.0
+                g *= u
+                g = g.reshape(self._shapet)
+                g = self.np.transpose(g, self._dimo)
             self.x.grad += g
+    
+    def _backward_compute_dims_and_shapes(self):
+        dim = self.dim
+        dim_last = self.x.ndim - 1
+        if dim == dim_last:
+            dimt = list(range(self.x.ndim))
+            dimo = dimt
+            shapet = self.x.shape
+        else:
+            dimt = list(range(self.x.ndim))
+            dimt.pop(dim)
+            dimt.append(dim)
+            shapet = [self.x.shape[d] for d in dimt]
+            dimo = [dimt.index(d) for d in range(self.x.ndim)]
+        self._dimt = dimt
+        self._dimo = dimo
+        self._shapet = shapet
 
 
 @OpDispatch.register(OP.MAX_REDUCE, DEVICE.CPU)
