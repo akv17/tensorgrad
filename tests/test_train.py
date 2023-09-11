@@ -214,6 +214,8 @@ class Helper(unittest.TestCase):
         num_epochs,
         batch_size,
     ):
+        tm.train()
+        m.train()
         tparams = dict(tm.named_parameters())
         params = dict(m.named_parameters())
         self.assertEqual(tparams.keys(), params.keys(), f'params')

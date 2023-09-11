@@ -16,7 +16,6 @@ class OpDispatch:
             msg = f'unknown op: {key}'
             raise KeyError(msg)
         op = cls._DISPATCH[key]
-        # not passing unpacked inputs because op requires original args passed (e.g. concat requires stacked inputs)
         op = op(*args, **kwargs)
         out = op.forward()
         out.requires_grad = requires_grad if is_grad_enabled() else False

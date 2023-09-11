@@ -223,6 +223,9 @@ class TestNN(unittest.TestCase):
             tol=1e-4,
         )
     
+    def test_batch_norm_running_stats(self):
+        self.helper._test_batch_norm_running_stats()
+    
     @parameterized.expand([
         [(2, 4), 1],
         [(2, 4, 8), 1],
@@ -355,6 +358,7 @@ class Helper(unittest.TestCase):
         m = getattr(tensorgrad.nn, module)(**tensorgrad_kwargs)
         m.init_from_torch(tm)
         m.to(DEVICE)
+        m.train()
         o = m(x)
         self._backward_tensorgrad(o)
 
@@ -388,6 +392,7 @@ class Helper(unittest.TestCase):
         x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
         m = getattr(tensorgrad.nn, module)(**tensorgrad_kwargs)
         m.to(DEVICE)
+        m.train()
         o = m(x)
         self._backward_tensorgrad(o)
 
@@ -436,6 +441,7 @@ class Helper(unittest.TestCase):
         m = tensorgrad.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads)
         m.init_from_torch(tm)
         m.to(DEVICE)
+        m.train()
         o = m(q, k, v, attn_mask=attn_mask)
         self._backward_tensorgrad(o)
 
@@ -464,6 +470,7 @@ class Helper(unittest.TestCase):
         m = tensorgrad.nn.Embedding(num_embeddings=num_embeddings, embedding_dim=embedding_dim)
         m.init_from_torch(tm)
         m.to(DEVICE)
+        m.train()
         o = m(x)
         self._backward_tensorgrad(o)
 
@@ -519,6 +526,7 @@ class Helper(unittest.TestCase):
         tdtype = DTYPE.INT32 if targets_as_int else DTYPE
         t = tensorgrad.Tensor(_targets, dtype=tdtype, device=DEVICE, requires_grad=False)
         m = getattr(tensorgrad.nn, module)()
+        m.train()
         loss = m(o, t)
         loss.backward()
 
@@ -527,6 +535,39 @@ class Helper(unittest.TestCase):
             [tloss, loss, tol, f'{test_name}@forward'],
             [to.grad, o.grad, tol, f'{test_name}@o_grad'],
         ])
+
+    def _test_batch_norm_running_stats(self):
+        b, c, h, w = 4, 8, 32, 32
+        shape = (b, c, h, w)
+        _x = np.random.normal(size=shape)
+
+        tdtype = getattr(torch, DTYPE.value)
+        tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
+        tm = torch.nn.BatchNorm2d(c)
+        tm.train()
+        to = tm(tx)
+
+        x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, requires_grad=True)
+        m = tensorgrad.nn.BatchNorm2d(c)
+        m.init_from_torch(tm)
+        m.to(DEVICE)
+        m.train()
+        o = m(x)
+
+        tol = 1e-5
+        self._check_tensors([[to, o, tol, 'forward_train']])
+
+        tol = 1e-5
+        self._check_tensors([[tm.running_mean, m.running_mean, tol, 'running_mean']])
+        tol = 1e-5
+        self._check_tensors([[tm.running_var, m.running_var, tol, 'running_var']])
+
+        tm.eval()
+        m.eval()
+        to = tm(tx)
+        o = m(x)
+        tol = 1e-5
+        self._check_tensors([[to, o, tol, 'forward_eval']])
 
     def _check_tensors(self, pairs):
         for tt, t, tol, name in pairs:
