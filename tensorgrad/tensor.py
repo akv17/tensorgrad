@@ -273,9 +273,11 @@ class Tensor:
         if not inplace:
             ob = self._copy_partial(device=device)
             return ob
+        data_numpy = self._storage.numpy(self.data)
+        grad_numpy = self._storage.numpy(self.grad)
         storage = StorageDispatch.get(device)
-        self.data = storage.tensor(self.data, dtype=self.dtype)
-        self.grad = storage.tensor(self.grad, dtype=self.dtype)
+        self.data = storage.tensor(data_numpy, dtype=self.dtype)
+        self.grad = storage.tensor(grad_numpy, dtype=self.dtype)
         self._storage = storage
         return self
     

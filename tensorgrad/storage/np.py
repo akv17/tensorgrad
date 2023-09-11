@@ -52,6 +52,10 @@ class NumpyStorage:
         dtype = cls._map_dtype(dtype)
         data = data.astype(dtype)
         return data
+    
+    @classmethod
+    def numpy(cls, data):
+        return data
 
     @classmethod
     def get_device(cls, data):
