@@ -51,7 +51,6 @@ class Tensor:
         name=None,
         requires_grad=True,
     ):
-        self.name = name or f'tensor@{str(uuid4())[:8]}'
         self.requires_grad = requires_grad if is_grad_enabled() else False
         
         self._storage = StorageDispatch.get(device)
@@ -238,17 +237,7 @@ class Tensor:
         children = (self,)
         out = OpDispatch.execute(OP.AVG_POOL2D, *children, kernel_size=kernel_size, stride=stride, padding=padding)
         return out
-
-    def backward(self, upstream=None):
-        if upstream is not None:
-            upstream = self._storage.tensor(upstream, dtype=self.dtype)
-        else:
-            upstream = self._storage.ones(self.shape, dtype=self.dtype)
-        self.grad = upstream
-        nodes = self._traverse()
-        for node in reversed(nodes):
-            node._backward()
-
+    
     def copy(self):
         ob = self._copy_from_data(self.data)
         return ob
@@ -314,6 +303,21 @@ class Tensor:
     def render(self):
         from .util.render import render_graph
         render_graph(self)
+    
+    def backward(self, upstream=None):
+        if upstream is not None:
+            upstream = self._storage.tensor(upstream, dtype=self.dtype)
+        else:
+            upstream = self._storage.ones(self.shape, dtype=self.dtype)
+        self.grad = upstream
+        nodes = self._traverse()
+        for node in reversed(nodes):
+            node._backward()
+        for node in nodes:
+            del node._op
+            del node._children
+            node._op = None
+            node._children = ()
 
     def _cast(self, dtype, inplace):
         if inplace:
