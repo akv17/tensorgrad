@@ -269,17 +269,35 @@ class Tensor:
         data = self._storage.ones(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
-    def to(self, device):
-        ob = self._copy_partial(device=device)
+    def to(self, device, inplace=True):
+        if not inplace:
+            ob = self._copy_partial(device=device)
+            return ob
+        storage = StorageDispatch.get(device)
+        self.data = storage.tensor(self.data, dtype=self.dtype)
+        self.grad = storage.tensor(self.grad, dtype=self.dtype)
+        self._storage = storage
+        return self
+    
+    def cpu(self, inplace=True):
+        ob = self.to('cpu', inplace=inplace)
+        return ob
+    
+    def cuda(self, inplace=True):
+        ob = self.to('cuda', inplace=inplace)
         return ob
 
-    def float(self):
-        data = self._storage.cast(self.data, dtype=DTYPE.FLOAT32)
-        return self._copy_partial(data=data, dtype=DTYPE.FLOAT32)
+    def float(self, inplace=False):
+        ob = self._cast(dtype=DTYPE.FLOAT32, inplace=inplace)
+        return ob
     
-    def bool(self):
-        data = self._storage.cast(self.data, dtype=DTYPE.BOOL)
-        return self._copy_partial(data=data, dtype=DTYPE.BOOL)
+    def bool(self, inplace=False):
+        ob = self._cast(dtype=DTYPE.BOOL, inplace=inplace)
+        return ob
+    
+    def long(self, inplace=False):
+        ob = self._cast(dtype=DTYPE.INT64, inplace=inplace)
+        return ob
 
     def arange(self, n):
         data = self._storage.arange(n, dtype=self.dtype)
@@ -294,6 +312,14 @@ class Tensor:
     def render(self):
         from .util.render import render_graph
         render_graph(self)
+
+    def _cast(self, dtype, inplace):
+        if inplace:
+            self.data = self._storage.cast(self.data, dtype=dtype)
+            rv = self
+        else:
+            rv = self._copy_partial(dtype=dtype)
+        return rv
 
     def _copy_partial(self, data=None, dtype=None, device=None, requires_grad=None):
         ob = type(self)(

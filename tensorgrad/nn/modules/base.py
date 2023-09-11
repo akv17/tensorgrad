@@ -49,10 +49,11 @@ class Module(ABC):
     def forward(self, *args, **kwargs): pass
 
     def to(self, device):
-        params_and_buffers = {**self._parameters, **self._buffers}
-        for k, v in params_and_buffers.items():
-            v = v.to(device)
-            setattr(self, k, v)
+        params_and_buffers = [*self._parameters.values(), *self._buffers.values()]
+        for v in params_and_buffers:
+            # must move inplace to keep `id(v)` the same.
+            # for example to maintain reference by optimizers when passing params to optimizers.
+            v.to(device, inplace=True)
         for m in self._modules.values():
             m.to(device)
 
