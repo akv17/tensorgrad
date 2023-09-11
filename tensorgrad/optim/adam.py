@@ -1,4 +1,4 @@
-from .stub import Optimizer
+from .base import Optimizer
 from ..ctx import no_grad
 
 
@@ -14,10 +14,6 @@ class Adam(Optimizer):
         self._step = 0
         self._moment1_buffer = [None] * len(self.parameters)
         self._moment2_buffer = [None] * len(self.parameters)
-
-    def zero_grad(self):
-        for p in self.parameters:
-            p.grad = p.zeros_like().data
 
     def step(self):
         with no_grad():
