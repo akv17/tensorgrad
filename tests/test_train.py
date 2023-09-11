@@ -216,6 +216,7 @@ class Helper(unittest.TestCase):
     ):
         tm.train()
         m.train()
+        m.to(DEVICE)
         tparams = dict(tm.named_parameters())
         params = dict(m.named_parameters())
         self.assertEqual(tparams.keys(), params.keys(), f'params')
@@ -238,14 +239,14 @@ class Helper(unittest.TestCase):
                 toptim.step()
                 tlosses.append(tloss.item())
                 
-                xb = x[i:i+batch_size]
-                yb = y[i:i+batch_size]
+                xb = x[i:i+batch_size].to(DEVICE)
+                yb = y[i:i+batch_size].to(DEVICE)
                 optim.zero_grad()
                 o = m(xb)
                 loss = loss_fn(o, yb)
                 loss.backward()
                 optim.step()
-                losses.append(loss.item())
+                losses.append(loss.cpu().item())
 
                 if VERBOSE:
                     if step == 1:
