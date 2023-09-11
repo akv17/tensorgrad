@@ -47,7 +47,7 @@ class Dropout(Module):
     def _generate_mask(self, x):
         # we invert mask and cast it to float to perform masking via elementwise multiplication.
         # positions with True in the original bool mask are meant to be zeroed out.
-        mask = (~x.bernoulli(p=self.p, shape=x.shape)).float()
+        mask = (~(x.bernoulli(p=self.p, shape=x.shape).bool())).float()
         return mask
 
 
