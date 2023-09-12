@@ -294,6 +294,10 @@ class Tensor:
         data = self._storage.arange(n, dtype=self.dtype)
         return self._copy_from_data(data)
 
+    def numpy(self):
+        data = self._storage.numpy(self.data)
+        return data
+
     def tolist(self):
         return self.data.tolist()
     
