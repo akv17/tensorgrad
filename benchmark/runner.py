@@ -1,8 +1,19 @@
 import time
 import statistics
 
-import torch
 import tensorgrad
+
+try:
+    import torch
+except ImportError:
+    msg = 'PyTorch is required to generate benchmarks.'
+    raise Exception(msg)
+
+try:
+    import tabulate
+except ImportError:
+    msg = '`tabulate` is required to generate benchmarks -> `pip install tabulate`'
+    raise Exception(msg)
 from tabulate import tabulate
 
 
