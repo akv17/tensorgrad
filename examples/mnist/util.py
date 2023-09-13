@@ -13,10 +13,10 @@ import tensorgrad
 
 class Dataset:
 
-    def __init__(self, is_train=True, truncate=None):
+    def __init__(self, is_train=True, truncate=None, root='.datasets'):
         self.is_train = is_train
         self.truncate = truncate
-        self.dataset = torchvision.datasets.MNIST(root='.datasets', download=True, train=is_train)
+        self.dataset = torchvision.datasets.MNIST(root=root, download=True, train=is_train)
         self.size = self.truncate or len(self.dataset)
 
     def __len__(self):
@@ -103,42 +103,50 @@ class Trainer:
             epoch += 1
             for x, y in ProgressBar(self.dataloader, steps_per_epoch, prefix=f'Epoch: {epoch} '):
                 step += 1
-                x = x.to(self.device)
-                y = y.to(self.device)
+                inputs = x.to(self.device)
+                targets = y.to(self.device)
                 self.optimizer.zero_grad()
-                outputs = self.model(x)
-                loss = self.loss_fn(outputs, y)
+                outputs = self.model(inputs)
+                loss = self.loss_fn(outputs, targets)
                 loss.backward()
                 self.optimizer.step()
                 loss_val = loss.detach().cpu().item()
                 losses.append(loss_val)
-                loss_val = tensorgrad.tensor(losses).mean().item()
             if self.evaluator is not None:
+                loss_train = tensorgrad.tensor(losses).mean().item()
                 self.model.eval()
-                report = self.evaluator.run()
+                metrics = self.evaluator.run()
                 self.model.train()
-                print(report, end='\n\n')
+                print(f'Train Loss: {loss_train}')
+                print('Metrics:')
+                print(metrics, end='\n\n')
 
 
 class ProgressBar:
 
-    def __init__(self, iter, n, prefix=None):
+    def __init__(self, iter, n, prefix=None, bins=25):
         self.it = iter
         self.n = n
         self.prefix = prefix or ''
+        self.bins = bins
         self._stream = sys.stdout
     
     def __iter__(self):
         self._stream.flush()
-        progress = [' '] * self.n
+        bins = [' '] * self.bins
         for i, it in enumerate(self.it):
-            progress[i] = '='
-            display = ''.join(progress)
-            display = f'{self.prefix}[{display}] {i+1}/{self.n}'
+            pos = self._calculate_bin(i)
+            bins[pos] = '='
+            display = ''.join(bins)
+            percent = int((i+1) / self.n * 100)
+            display = f'{self.prefix}[{display}] {percent}%'
             self._stream.write('\r')
             self._stream.write(display)
             yield it
         self._stream.write('\n')
+
+    def _calculate_bin(self, i):
+        return max(0, int(((i+1) / self.n) * self.bins) - 1)
 
 
 class Evaluator:
@@ -173,15 +181,15 @@ class Evaluator:
         for p, t in zip(pred, true):
             is_correct = p == t
             by_label.setdefault(t, []).append(is_correct)
-        by_label = {k: tensorgrad.tensor(v).mean().item() for k, v in by_label.items()}
+        by_label = {k: (tensorgrad.tensor(v).mean().item(), len(v)) for k, v in by_label.items()}
         by_label = {k: by_label[k] for k in sorted(by_label)}
-        by_label['Total'] = tensorgrad.tensor(list(by_label.values())).mean().item()
+        by_label['Total'] = (tensorgrad.tensor([v[0] for v in by_label.values()]).mean().item(), len(true))
         return by_label
     
     def _format(self, summary):
         buffer = [
-            'Digit\tAccuracy',
-            *[f'{k}\t{v:.4f}' for k, v in summary.items()]
+            'Class\tAccuracy\tSize',
+            *[f'{k}\t{v[0]:.4f}\t\t{v[1]}' for k, v in summary.items()]
         ]
         report = '\n'.join(buffer)
         return report

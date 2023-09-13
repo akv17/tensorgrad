@@ -24,13 +24,12 @@ class Block(tensorgrad.nn.Module):
         return x
 
 
-class Model(tensorgrad.nn.Module):
+class CNN(tensorgrad.nn.Module):
 
-    def __init__(self, in_channels=3, num_classes=100):
+    def __init__(self, in_channels=1, num_classes=10):
         super().__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
-        # backbone downsamples from 28x28 to 4x4.
         self.backbone = tensorgrad.nn.Sequential(
             Block(in_channels=self.in_channels, out_channels=8),
             Block(in_channels=8, out_channels=16, padding=2),
