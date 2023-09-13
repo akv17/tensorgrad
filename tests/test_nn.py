@@ -64,6 +64,26 @@ class TestNN(unittest.TestCase):
             torch_kwargs={},
             tensorgrad_kwargs={},
         )
+    
+    @parameterized.expand([
+        [(128,), 0],
+        [(32, 64), 0],
+        [(32, 64), 1],
+        [(32, 64), -1],
+        [(8, 16, 32), 0],
+        [(8, 16, 32), 1],
+        [(8, 16, 32), 2],
+        [(8, 16, 32), -1],
+    ])
+    def test_softmax(self, shape, dim):
+        name = f'{shape}::{dim}'
+        self.helper._test_module_without_params(
+            test_name=name,
+            module='Softmax',
+            input_shape=shape,
+            torch_kwargs={'dim': dim},
+            tensorgrad_kwargs={'dim': dim},
+        )
 
     @parameterized.expand([
         [(2, 8), 16, True],

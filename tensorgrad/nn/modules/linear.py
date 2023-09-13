@@ -1,4 +1,5 @@
 import math
+
 from .base import Module, Parameter
 from .. import init
 from ...const import DTYPE
