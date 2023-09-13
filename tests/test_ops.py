@@ -1,19 +1,15 @@
-import os
 import math
 import unittest
 
 import numpy as np
 from parameterized import parameterized
 
-from tests.util import require_torch, check_tensors, generate_cases, get_device, get_dtype
+from tests.const import DTYPE, DEVICE
+from tests.util import require_torch
+from tests.helper import CommonHelper
 
 import tensorgrad
 torch = require_torch()
-
-DEVICE = get_device()
-DTYPE = get_dtype()
-SHOW_DIFF = os.getenv('TESTS_SHOW_DIFF') == '1'
-RENDER = os.getenv('TESTS_RENDER') == '1'
 
 
 class TestOps(unittest.TestCase):
@@ -205,23 +201,7 @@ class TestOps(unittest.TestCase):
         [[(4, 8, 16, 32)], -1],
     ])
     def test_concat(self, shapes, dim):
-        _x = [np.random.normal(size=s) for s in shapes]
-        
-        x = [tensorgrad.Tensor(xi, device=DEVICE, dtype=DTYPE, requires_grad=True) for xi in _x]
-        o = x[0].concat(x[1:], dim=dim)
-        self.helper._backward_tensorgrad(o)
-        if RENDER:
-            o.render()
-
-        tdtype = getattr(torch, DTYPE.value)
-        tx = [torch.tensor(xi, requires_grad=True, dtype=tdtype) for xi in _x]
-        to = torch.concat(tx, dim)
-        self.helper._backward_torch(to)
-
-        name = f'{shapes}::{dim}'
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@forward')
-        for txi, xi in zip(tx, x):
-            self.assertTrue(check_tensors(txi.grad.tolist(), xi.grad.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@x_grad')
+        self.helper._test_concat(shapes=shapes, dim=dim)
 
     @parameterized.expand([
         [(3, 4), 0],
@@ -249,21 +229,7 @@ class TestOps(unittest.TestCase):
         [(2, 4, 8), -math.inf],
     ])
     def test_masked_fill_(self, shape, value):
-        _x = np.random.normal(0.0, 1.0, size=shape)
-        _m = np.random.randint(0, 2, size=_x.shape).astype('bool')
-        
-        x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=False, name='x')
-        m = tensorgrad.Tensor(_m, device=DEVICE, dtype=DTYPE.BOOL, requires_grad=False, name='m')
-        x = x.masked_fill_(m, value)
-
-        tdtype = getattr(torch, x.dtype.value)
-        tx = torch.tensor(_x, requires_grad=False, dtype=tdtype)
-        tm = torch.tensor(_m, requires_grad=False, dtype=torch.bool)
-        tx = tx.masked_fill_(tm, value)
-
-        # this op does not have backward.
-        name = f'{shape}::{value}'
-        self.assertTrue(check_tensors(tx.tolist(), x.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@forward')
+        self.helper._test_masked_fill_(shape=shape, value=value)
 
     @parameterized.expand([
         [(128,), None, False],
@@ -438,32 +404,18 @@ class TestOps(unittest.TestCase):
         out_channels,
         bias,
         stride,
-        padding
+        padding,
     ):
-        _x = np.random.normal(size=(batch_size, in_channels, *input_size))
-        _k = np.random.normal(size=(out_channels, in_channels, *kernel_size))
-        _b = np.random.normal(size=(out_channels,)) if bias else None
-
-        x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
-        k = tensorgrad.Tensor(_k, device=DEVICE, dtype=DTYPE, requires_grad=True, name='k')
-        b = tensorgrad.Tensor(_b, device=DEVICE, dtype=DTYPE, requires_grad=True, name='b') if bias else None
-        o = x.conv2d(kernel=k, bias=b, stride=stride, padding=padding)
-        self.helper._backward_tensorgrad(o)
-
-        tdtype = getattr(torch, x.dtype.value)
-        tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
-        tk = torch.tensor(_k, requires_grad=True, dtype=tdtype)
-        tb = torch.tensor(_b, requires_grad=True, dtype=tdtype) if bias else None
-        to = torch.nn.functional.conv2d(tx, tk, tb, stride=stride, padding=padding)
-        self.helper._backward_torch(to)
-
-        name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{out_channels}::{bias}::{stride}::{padding}'
-        tol = 1e-3
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=False), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), tol=tol, show_diff=True), msg=f'{name}@x_grad')
-        self.assertTrue(check_tensors(tk.grad.tolist(), k.grad.tolist(), tol=tol, show_diff=True), msg=f'{name}@k_grad')
-        if bias:
-            self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=False), msg=f'{name}@b_grad')
+        self.helper._test_conv2d(
+            batch_size=batch_size,
+            input_size=input_size,
+            kernel_size=kernel_size,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            bias=bias,
+            stride=stride,
+            padding=padding,
+        )
     
     _max_pool2d_cases = [
         [2, (4, 4), (2, 2), 3, (2, 2), (0, 0)],
@@ -526,6 +478,7 @@ class TestOps(unittest.TestCase):
 
 
 class Helper(unittest.TestCase):
+    helper = CommonHelper()
 
     def _test_unary_op(self, shape, method, x=None, args=None, kwargs=None, torch_kwargs=None):
         args = args or ()
@@ -535,19 +488,20 @@ class Helper(unittest.TestCase):
         
         x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
         o = getattr(x, method)(*args, **kwargs)
-        self._backward_tensorgrad(o)
-        if RENDER:
-            o.render()
+        self.helper._backward(o)
 
         tdtype = getattr(torch, x.dtype.value)
         tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
         to = getattr(tx, method)(*args, **kwargs, )
         to = to[0] if isinstance(to, tuple) else to
-        self._backward_torch(to)
+        self.helper._backward(to)
 
         name = f'{shape}::{method}::{args}::{kwargs}'
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), show_diff=SHOW_DIFF), msg=f'{name}@x_grad')
+        tol = 1e-5
+        self.helper._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [tx.grad, x.grad, tol, f'{name}@x_grad'],
+        ])
 
     def _test_binary_op(self, a_shape, b_shape, method, tol=1e-5):
         _a = np.random.normal(size=a_shape)
@@ -556,21 +510,21 @@ class Helper(unittest.TestCase):
         a = tensorgrad.Tensor(_a, device=DEVICE, dtype=DTYPE, requires_grad=True, name='a')
         b = tensorgrad.Tensor(_b, device=DEVICE, dtype=DTYPE, requires_grad=True, name='b')
         o = getattr(a, method)(b)
-        self._backward_tensorgrad(o)
-        if RENDER:
-            o.render()
+        self.helper._backward(o)
 
         tdtype = getattr(torch, a.dtype.value)
         ta = torch.tensor(_a, requires_grad=True, dtype=tdtype)
         tb = torch.tensor(_b, requires_grad=True, dtype=tdtype)
         to = getattr(ta, method)(tb)
-        self._backward_torch(to)
+        self.helper._backward(to)
 
         name = f'{a_shape}::{b_shape}::{method}'
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(ta.grad.tolist(), a.grad.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@a_grad')
-        self.assertTrue(check_tensors(tb.grad.tolist(), b.grad.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@b_grad')
-    
+        self.helper._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [ta.grad, a.grad, tol, f'{name}@a_grad'],
+            [tb.grad, b.grad, tol, f'{name}@b_grad'],
+        ])
+
     def _test_pool_op(
         self,
         method,
@@ -585,30 +539,90 @@ class Helper(unittest.TestCase):
 
         x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
         o = getattr(x, method)(kernel_size=kernel_size, stride=stride, padding=padding)
-        self._backward_tensorgrad(o)
-        if RENDER:
-            o.render()
+        self.helper._backward(o)
 
         tdtype = getattr(torch, x.dtype.value)
         tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
         to = getattr(torch.nn.functional, method)(tx, kernel_size=kernel_size, stride=stride, padding=padding)
-        self._backward_torch(to)
+        self.helper._backward(to)
 
         name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{stride}::{padding}'
         tol = 1e-4
-        self.assertTrue(check_tensors(to.tolist(), o.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@forward')
-        self.assertTrue(check_tensors(tx.grad.tolist(), x.grad.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=f'{name}@x_grad')
+        self.helper._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [tx.grad, x.grad, tol, f'{name}@x_grad'],
+        ])
 
-    def _backward_tensorgrad(self, tensor):
-        r = tensor.arange(tensor.numel()).reshape(tensor.shape) + 1.0
-        norm = r.data.max().tolist()
-        r = r / norm
-        o = (tensor * r).sum()
-        o.backward()
-    
-    def _backward_torch(self, tensor):
-        r = torch.arange(tensor.numel()).reshape(tensor.shape) + 1.0
-        norm = r.data.max().tolist()
-        r = r / norm
-        o = (tensor * r).sum()
-        o.backward()
+    def _test_concat(self, shapes, dim):
+        _x = [np.random.normal(size=s) for s in shapes]
+        
+        x = [tensorgrad.Tensor(xi, device=DEVICE, dtype=DTYPE, requires_grad=True) for xi in _x]
+        o = x[0].concat(x[1:], dim=dim)
+        self.helper._backward(o)
+
+        tdtype = getattr(torch, DTYPE.value)
+        tx = [torch.tensor(xi, requires_grad=True, dtype=tdtype) for xi in _x]
+        to = torch.concat(tx, dim)
+        self.helper._backward(to)
+
+        name = f'{shapes}::{dim}'
+        tol = 1e-5
+        self.helper._check_tensors([[to, o, tol, f'{name}@forward']])
+        for txi, xi in zip(tx, x):
+            self.helper._check_tensors([[txi.grad, xi.grad, tol, f'{name}@x_grad']])
+
+    def _test_masked_fill_(self, shape, value):
+        _x = np.random.normal(0.0, 1.0, size=shape)
+        _m = np.random.randint(0, 2, size=_x.shape).astype('bool')
+        
+        x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=False, name='x')
+        m = tensorgrad.Tensor(_m, device=DEVICE, dtype=DTYPE.BOOL, requires_grad=False, name='m')
+        x = x.masked_fill_(m, value)
+
+        tdtype = getattr(torch, x.dtype.value)
+        tx = torch.tensor(_x, requires_grad=False, dtype=tdtype)
+        tm = torch.tensor(_m, requires_grad=False, dtype=torch.bool)
+        tx = tx.masked_fill_(tm, value)
+
+        # this op does not have backward.
+        name = f'{shape}::{value}'
+        tol = 1e-5
+        self.helper._check_tensors([[tx, x, tol, f'{name}@forward']])
+
+    def _test_conv2d(
+        self,
+        batch_size,
+        input_size,
+        kernel_size,
+        in_channels,
+        out_channels,
+        bias,
+        stride,
+        padding,
+    ):
+        _x = np.random.normal(size=(batch_size, in_channels, *input_size))
+        _k = np.random.normal(size=(out_channels, in_channels, *kernel_size))
+        _b = np.random.normal(size=(out_channels,)) if bias else None
+
+        x = tensorgrad.Tensor(_x, device=DEVICE, dtype=DTYPE, requires_grad=True, name='x')
+        k = tensorgrad.Tensor(_k, device=DEVICE, dtype=DTYPE, requires_grad=True, name='k')
+        b = tensorgrad.Tensor(_b, device=DEVICE, dtype=DTYPE, requires_grad=True, name='b') if bias else None
+        o = x.conv2d(kernel=k, bias=b, stride=stride, padding=padding)
+        self.helper._backward(o)
+
+        tdtype = getattr(torch, x.dtype.value)
+        tx = torch.tensor(_x, requires_grad=True, dtype=tdtype)
+        tk = torch.tensor(_k, requires_grad=True, dtype=tdtype)
+        tb = torch.tensor(_b, requires_grad=True, dtype=tdtype) if bias else None
+        to = torch.nn.functional.conv2d(tx, tk, tb, stride=stride, padding=padding)
+        self.helper._backward(to)
+
+        name = f'{batch_size}::{input_size}::{kernel_size}::{in_channels}::{out_channels}::{bias}::{stride}::{padding}'
+        tol = 1e-3
+        self.helper._check_tensors([
+            [to, o, tol, f'{name}@forward'],
+            [tx.grad, x.grad, tol, f'{name}@x_grad'],
+            [tk.grad, k.grad, tol, f'{name}@k_grad'],
+        ])
+        if bias:
+            self.helper._check_tensors([[tb.grad, b.grad, tol, f'{name}@b_grad']])

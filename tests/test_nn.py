@@ -1,19 +1,15 @@
-import os
 import unittest
 
 import numpy as np
 from parameterized import parameterized
 
-from tests.util import require_torch, check_tensors, generate_cases, get_device, get_dtype
+from tests.const import DTYPE, DEVICE
+from tests.util import require_torch
+from tests.helper import CommonHelper
 
 import tensorgrad
 torch = require_torch()
 torch.manual_seed(0)
-
-DEVICE = get_device()
-DTYPE = get_dtype()
-SHOW_DIFF = os.getenv('TESTS_SHOW_DIFF') == '1'
-RENDER = os.getenv('TESTS_RENDER') == '1'
 
 
 class TestNN(unittest.TestCase):
@@ -336,6 +332,7 @@ class TestNN(unittest.TestCase):
 
 
 class Helper(unittest.TestCase):
+    helper = CommonHelper()
 
     def _test_module_with_weight_and_bias(
         self,
@@ -352,7 +349,7 @@ class Helper(unittest.TestCase):
         tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
         tm = getattr(torch.nn, module)(**torch_kwargs)
         to = tm(tx)
-        self._backward_torch(to)
+        self.helper._backward(to)
 
         x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, requires_grad=True)
         m = getattr(tensorgrad.nn, module)(**tensorgrad_kwargs)
@@ -360,15 +357,15 @@ class Helper(unittest.TestCase):
         m.to(DEVICE)
         m.train()
         o = m(x)
-        self._backward_tensorgrad(o)
+        self.helper._backward(o)
 
-        self._check_tensors([
+        self.helper._check_tensors([
             [to, o, tol, f'{test_name}@forward'],
             [tx.grad, x.grad, tol, f'{test_name}@x_grad'],
             [tm.weight.grad, m.weight.grad, tol, f'{test_name}@w_grad'],
         ])
         if tm.bias is not None:
-            self._check_tensors([
+            self.helper._check_tensors([
                 [tm.bias.grad, m.bias.grad, tol, f'{test_name}@b_grad'],
             ])
     
@@ -387,16 +384,16 @@ class Helper(unittest.TestCase):
         tx = torch.tensor(_x, dtype=tdtype, requires_grad=True)
         tm = getattr(torch.nn, module)(**torch_kwargs)
         to = tm(tx)
-        self._backward_torch(to)
+        self.helper._backward(to)
 
         x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
         m = getattr(tensorgrad.nn, module)(**tensorgrad_kwargs)
         m.to(DEVICE)
         m.train()
         o = m(x)
-        self._backward_tensorgrad(o)
+        self.helper._backward(o)
 
-        self._check_tensors([
+        self.helper._check_tensors([
             [to, o, tol, f'{test_name}@forward'],
             [tx.grad, x.grad, tol, f'{test_name}@x_grad'],
         ])
@@ -432,7 +429,7 @@ class Helper(unittest.TestCase):
         tattn_mask = torch.tensor(_tattn_mask, dtype=torch.bool, requires_grad=False) if _tattn_mask is not None else None
         tm = torch.nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, batch_first=True, bias=False)
         to, _ = tm(tq, tk, tv, attn_mask=tattn_mask)
-        self._backward_torch(to)
+        self.helper._backward(to)
 
         q = tensorgrad.Tensor(_q, dtype=DTYPE, device=DEVICE, requires_grad=True)
         k = tensorgrad.Tensor(_k, dtype=DTYPE, device=DEVICE, requires_grad=True)
@@ -443,11 +440,11 @@ class Helper(unittest.TestCase):
         m.to(DEVICE)
         m.train()
         o = m(q, k, v, attn_mask=attn_mask)
-        self._backward_tensorgrad(o)
+        self.helper._backward(o)
 
         name = f'{q_shape}::{num_heads}'
         tol = 1e-4
-        self._check_tensors([
+        self.helper._check_tensors([
             [to, o, tol, f'{name}@forward'],
             [tq.grad, q.grad, tol, f'{name}@q_grad'],
             [tk.grad, k.grad, tol, f'{name}@k_grad'],
@@ -464,7 +461,7 @@ class Helper(unittest.TestCase):
         tx = torch.tensor(_x, dtype=torch.int32, requires_grad=False)
         tm = torch.nn.Embedding(num_embeddings=num_embeddings, embedding_dim=embedding_dim)
         to = tm(tx)
-        self._backward_torch(to)
+        self.helper._backward(to)
 
         x = tensorgrad.Tensor(_x, dtype=DTYPE.INT32, device=DEVICE, name='x', requires_grad=False)
         m = tensorgrad.nn.Embedding(num_embeddings=num_embeddings, embedding_dim=embedding_dim)
@@ -472,11 +469,11 @@ class Helper(unittest.TestCase):
         m.to(DEVICE)
         m.train()
         o = m(x)
-        self._backward_tensorgrad(o)
+        self.helper._backward(o)
 
         tol = 1e-5
         test_name = f'{shape}::{num_embeddings}::{embedding_dim}'
-        self._check_tensors([
+        self.helper._check_tensors([
             [to, o, tol, f'{test_name}@forward'],
             [tm.weight.grad, m.weight.grad, tol, f'{test_name}@w_grad'],
         ])
@@ -490,7 +487,7 @@ class Helper(unittest.TestCase):
         tm.train()
         to = tm(tx)
         tmask = to == 0.0
-        self._backward_torch(to)
+        self.helper._backward(to)
 
         x = tensorgrad.Tensor(_x, dtype=DTYPE, device=DEVICE, name='x', requires_grad=True)
         m = tensorgrad.nn.Dropout(p)
@@ -501,11 +498,11 @@ class Helper(unittest.TestCase):
         mask = tensorgrad.Tensor(mask, dtype=DTYPE.BOOL, device=DEVICE, requires_grad=False)
         m._generate_mask = lambda __x: (~mask).float()
         o = m(x)
-        self._backward_tensorgrad(o)
+        self.helper._backward(o)
 
         tol = 1e-5
         test_name = f'{shape}::{p}'
-        self._check_tensors([
+        self.helper._check_tensors([
             [to, o, tol, f'{test_name}@forward'],
             [tx.grad, x.grad, tol, f'{test_name}@x_grad'],
         ])
@@ -531,7 +528,7 @@ class Helper(unittest.TestCase):
         loss.backward()
 
         tol = 1e-5
-        self._check_tensors([
+        self.helper._check_tensors([
             [tloss, loss, tol, f'{test_name}@forward'],
             [to.grad, o.grad, tol, f'{test_name}@o_grad'],
         ])
@@ -555,34 +552,16 @@ class Helper(unittest.TestCase):
         o = m(x)
 
         tol = 1e-5
-        self._check_tensors([[to, o, tol, 'forward_train']])
+        self.helper._check_tensors([[to, o, tol, 'forward_train']])
 
         tol = 1e-5
-        self._check_tensors([[tm.running_mean, m.running_mean, tol, 'running_mean']])
+        self.helper._check_tensors([[tm.running_mean, m.running_mean, tol, 'running_mean']])
         tol = 1e-5
-        self._check_tensors([[tm.running_var, m.running_var, tol, 'running_var']])
+        self.helper._check_tensors([[tm.running_var, m.running_var, tol, 'running_var']])
 
         tm.eval()
         m.eval()
         to = tm(tx)
         o = m(x)
         tol = 1e-5
-        self._check_tensors([[to, o, tol, 'forward_eval']])
-
-    def _check_tensors(self, pairs):
-        for tt, t, tol, name in pairs:
-            self.assertTrue(check_tensors(tt.tolist(), t.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=name)
-
-    def _backward_tensorgrad(self, tensor):
-        r = tensor.arange(tensor.numel()).reshape(tensor.shape) + 1.0
-        norm = r.data.max().tolist()
-        r = r / norm
-        o = (tensor * r).sum()
-        o.backward()
-    
-    def _backward_torch(self, tensor):
-        r = torch.arange(tensor.numel()).reshape(tensor.shape) + 1.0
-        norm = r.data.max().tolist()
-        r = r / norm
-        o = (tensor * r).sum()
-        o.backward()
+        self.helper._check_tensors([[to, o, tol, 'forward_eval']])
