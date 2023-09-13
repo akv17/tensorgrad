@@ -1,18 +1,15 @@
-import os
 import unittest
 
 import numpy as np
 from parameterized import parameterized
 
-from tests.util import require_torch, check_tensors, generate_cases, get_device, get_dtype
+from tests.const import DTYPE, DEVICE
+from tests.util import require_torch
+from tests.helper import CommonHelper
 
 import tensorgrad
 torch = require_torch()
 torch.manual_seed(0)
-
-DEVICE = get_device()
-DTYPE = get_dtype()
-SHOW_DIFF = os.getenv('TESTS_SHOW_DIFF') == '1'
 
 
 class TestOptim(unittest.TestCase):
@@ -47,6 +44,7 @@ class TestOptim(unittest.TestCase):
 
 
 class Helper(unittest.TestCase):
+    helper = CommonHelper()
 
     def _test_optim(self, module, shape, num_steps, kwargs=None):
         kwargs = kwargs or {}
@@ -76,11 +74,7 @@ class Helper(unittest.TestCase):
             f.backward()
             optim.step()
             
-            self._check_tensors([
+            self.helper._check_tensors([
                 [tf, f, tol, f'forward@{name}'],
                 [tx.grad, x.grad, tol, f'x_grad@{name}'],
             ])
-    
-    def _check_tensors(self, pairs):
-        for tt, t, tol, name in pairs:
-            self.assertTrue(check_tensors(tt.tolist(), t.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=name)

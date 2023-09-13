@@ -1,4 +1,4 @@
-from .stub import Optimizer
+from .base import Optimizer
 from ..ctx import no_grad
 
 
@@ -11,10 +11,6 @@ class SGD(Optimizer):
         
         self._step = 0
         self._momentum_buffer = [0.0] * len(self.parameters)
-
-    def zero_grad(self):
-        for p in self.parameters:
-            p.grad = p.zeros_like().data
 
     def step(self):
         with no_grad():

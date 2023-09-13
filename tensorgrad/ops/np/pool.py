@@ -5,6 +5,8 @@ from .util.conv2d import conv2d_compute_output_size, conv2d_extract_windows, con
 from ..stubs import BaseOp
 from ...const import OP
 
+_ALREADY_LOGGED_SLOW_MAX_POOL = False
+
 
 class MaxPool2D(BaseOp, NumpyOp):
     _NAME = OP.MAX_POOL2D
@@ -17,11 +19,14 @@ class MaxPool2D(BaseOp, NumpyOp):
         
         self._use_fast_impl = self._decide_use_fast_impl()
         if not self._use_fast_impl:
-            msg = (
-                'MaxPool2D will use slow implementation because input cannot be evenly tiled with given parameters. '
-                'To use fast implementation consider choosing square kernel with stride of the same size and padding such that total input size is divisible by kernel size.'
-            )
-            warnings.warn(msg)
+            global _ALREADY_LOGGED_SLOW_MAX_POOL
+            if not _ALREADY_LOGGED_SLOW_MAX_POOL:
+                msg = (
+                    'MaxPool2D will use slow implementation because input cannot be evenly tiled with given parameters. '
+                    'To use fast implementation consider choosing square kernel with stride of the same size and padding such that total input size is divisible by kernel size.'
+                )
+                warnings.warn(msg)
+                _ALREADY_LOGGED_SLOW_MAX_POOL = True
             self._jit_backward_slow = self._jit_compile_backward_slow()
             self._forward = self._forward_slow
             self._backward = self._backward_slow

@@ -24,9 +24,30 @@ class Tensor:
         return tensor
     
     @classmethod
+    def arange(cls, n, dtype=None, device=None, requires_grad=True):
+        dtype = dtype or DTYPE.INT64
+        storage = StorageDispatch.get(device)
+        data = storage.arange(n, dtype=dtype)
+        tensor = cls(data=data, dtype=dtype, device=device, requires_grad=requires_grad)
+        return tensor
+    
+    @classmethod
     def rand(cls, *shape, dtype=None, device=None, requires_grad=True):
         kwargs = {'a': 0.0, 'b': 1.0}
         tensor = cls._factory('random_uniform', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
+        return tensor
+    
+    @classmethod
+    def randn(cls, *shape, mu=0.0, sigma=1.0, dtype=None, device=None, requires_grad=True):
+        kwargs = {'mu': mu, 'sigma': sigma}
+        tensor = cls._factory('random_normal', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
+        return tensor
+    
+    @classmethod
+    def randint(cls, low, high, shape, dtype=None, device=None, requires_grad=True):
+        dtype = dtype or DTYPE.INT64
+        kwargs = {'low': low, 'high': high, 'shape': shape}
+        tensor = cls._factory('random_randint', dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
         return tensor
     
     @classmethod
@@ -51,7 +72,6 @@ class Tensor:
         name=None,
         requires_grad=True,
     ):
-        self.name = name or f'tensor@{str(uuid4())[:8]}'
         self.requires_grad = requires_grad if is_grad_enabled() else False
         
         self._storage = StorageDispatch.get(device)
@@ -238,17 +258,7 @@ class Tensor:
         children = (self,)
         out = OpDispatch.execute(OP.AVG_POOL2D, *children, kernel_size=kernel_size, stride=stride, padding=padding)
         return out
-
-    def backward(self, upstream=None):
-        if upstream is not None:
-            upstream = self._storage.tensor(upstream, dtype=self.dtype)
-        else:
-            upstream = self._storage.ones(self.shape, dtype=self.dtype)
-        self.grad = upstream
-        nodes = self._traverse()
-        for node in reversed(nodes):
-            node._backward()
-
+    
     def copy(self):
         ob = self._copy_from_data(self.data)
         return ob
@@ -269,21 +279,41 @@ class Tensor:
         data = self._storage.ones(self.data.shape, dtype=self.dtype)
         return self._copy_from_data(data)
     
-    def to(self, device):
-        ob = self._copy_partial(device=device)
+    def to(self, device, inplace=True):
+        if not inplace:
+            ob = self._copy_partial(device=device)
+            return ob
+        data_numpy = self._storage.numpy(self.data)
+        grad_numpy = self._storage.numpy(self.grad)
+        storage = StorageDispatch.get(device)
+        self.data = storage.tensor(data_numpy, dtype=self.dtype)
+        self.grad = storage.tensor(grad_numpy, dtype=self.dtype)
+        self._storage = storage
+        return self
+    
+    def cpu(self, inplace=True):
+        ob = self.to('cpu', inplace=inplace)
+        return ob
+    
+    def cuda(self, inplace=True):
+        ob = self.to('cuda', inplace=inplace)
         return ob
 
-    def float(self):
-        data = self._storage.cast(self.data, dtype=DTYPE.FLOAT32)
-        return self._copy_partial(data=data, dtype=DTYPE.FLOAT32)
+    def float(self, inplace=False):
+        ob = self._cast(dtype=DTYPE.FLOAT32, inplace=inplace)
+        return ob
     
-    def bool(self):
-        data = self._storage.cast(self.data, dtype=DTYPE.BOOL)
-        return self._copy_partial(data=data, dtype=DTYPE.BOOL)
-
-    def arange(self, n):
-        data = self._storage.arange(n, dtype=self.dtype)
-        return self._copy_from_data(data)
+    def bool(self, inplace=False):
+        ob = self._cast(dtype=DTYPE.BOOL, inplace=inplace)
+        return ob
+    
+    def long(self, inplace=False):
+        ob = self._cast(dtype=DTYPE.INT64, inplace=inplace)
+        return ob
+    
+    def numpy(self):
+        data = self._storage.numpy(self.data)
+        return data
 
     def tolist(self):
         return self.data.tolist()
@@ -294,6 +324,29 @@ class Tensor:
     def render(self):
         from .util.render import render_graph
         render_graph(self)
+    
+    def backward(self, upstream=None):
+        if upstream is not None:
+            upstream = self._storage.tensor(upstream, dtype=self.dtype)
+        else:
+            upstream = self._storage.ones(self.shape, dtype=self.dtype)
+        self.grad = upstream
+        nodes = self._traverse()
+        for node in reversed(nodes):
+            node._backward()
+        for node in nodes:
+            del node._op
+            del node._children
+            node._op = None
+            node._children = ()
+
+    def _cast(self, dtype, inplace):
+        if inplace:
+            self.data = self._storage.cast(self.data, dtype=dtype)
+            rv = self
+        else:
+            rv = self._copy_partial(dtype=dtype)
+        return rv
 
     def _copy_partial(self, data=None, dtype=None, device=None, requires_grad=None):
         ob = type(self)(

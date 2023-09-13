@@ -3,18 +3,17 @@ import pickle
 import unittest
 
 import numpy as np
-from parameterized import parameterized
 
-from tests.util import require_torch, check_tensors, generate_cases, get_device, get_dtype
+
+from tests.const import DTYPE, DEVICE
+from tests.util import require_torch
+from tests.helper import CommonHelper
 
 import tensorgrad
 torch = require_torch()
 torch.manual_seed(0)
 
-DEVICE = get_device()
-DTYPE = get_dtype()
-SHOW_DIFF = os.getenv('TESTS_SHOW_DIFF') == '1'
-VERBOSE = os.getenv('TESTS_VERBOSE') == '1'
+VERBOSE = os.getenv('VERBOSE') == '1'
 
 
 class TestTraining(unittest.TestCase):
@@ -204,6 +203,7 @@ class TestTraining(unittest.TestCase):
 
 
 class Helper(unittest.TestCase):
+    helper = CommonHelper()
 
     def _train(
         self,
@@ -214,6 +214,9 @@ class Helper(unittest.TestCase):
         num_epochs,
         batch_size,
     ):
+        tm.train()
+        m.train()
+        m.to(DEVICE)
         tparams = dict(tm.named_parameters())
         params = dict(m.named_parameters())
         self.assertEqual(tparams.keys(), params.keys(), f'params')
@@ -236,14 +239,14 @@ class Helper(unittest.TestCase):
                 toptim.step()
                 tlosses.append(tloss.item())
                 
-                xb = x[i:i+batch_size]
-                yb = y[i:i+batch_size]
+                xb = x[i:i+batch_size].to(DEVICE)
+                yb = y[i:i+batch_size].to(DEVICE)
                 optim.zero_grad()
                 o = m(xb)
                 loss = loss_fn(o, yb)
                 loss.backward()
                 optim.step()
-                losses.append(loss.item())
+                losses.append(loss.cpu().item())
 
                 if VERBOSE:
                     if step == 1:
@@ -252,15 +255,11 @@ class Helper(unittest.TestCase):
                     loss = np.mean(losses)
                     print(f'epoch: {epoch} step: {step} torch_loss: {tloss:.8f} tensorgrad_loss: {loss:.8f}')
                 
-                self._check_tensors([[tloss, loss, check_tol, 'loss']])
+                self.helper._check_tensors([[tloss, loss, check_tol, 'loss']])
                 for pname in params:
                     tp = tparams[pname]
                     p = params[pname]
-                    self._check_tensors([
+                    self.helper._check_tensors([
                         [tp, p, check_tol, f'{pname}@data'],
                         [tp.grad, p.grad, check_tol, f'{pname}@grad'],
                     ])
-
-    def _check_tensors(self, pairs):
-        for tt, t, tol, name in pairs:
-            self.assertTrue(check_tensors(tt.tolist(), t.tolist(), tol=tol, show_diff=SHOW_DIFF), msg=name)

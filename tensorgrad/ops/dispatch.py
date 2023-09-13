@@ -10,18 +10,18 @@ class OpDispatch:
         inputs = cls._unpack_inputs_maybe(inputs)
         cls._check_inputs_on_same_device(op=op, inputs=inputs)
         device = inputs[0].device
-        requires_grad = any(i.requires_grad for i in inputs)
-        key = (op, device)
-        if key not in cls._DISPATCH:
-            msg = f'unknown op: {key}'
-            raise KeyError(msg)
-        op = cls._DISPATCH[key]
-        # not passing unpacked inputs because op requires original args passed (e.g. concat requires stacked inputs)
+        op = cls._get_op(op=op, device=device)
         op = op(*args, **kwargs)
         out = op.forward()
-        out.requires_grad = requires_grad if is_grad_enabled() else False
-        out._children = inputs if is_grad_enabled() else ()
-        out._op = op
+        if is_grad_enabled():
+            requires_grad = any(i.requires_grad for i in inputs)
+            out.requires_grad = requires_grad
+            out._children = inputs
+            out._op = op
+        else:
+            out.requires_grad = False
+            out._children = ()
+            out._op = None
         return out
 
     @classmethod
@@ -35,6 +35,15 @@ class OpDispatch:
             cls._DISPATCH[key] = impl
             return impl
         return _deco
+
+    @classmethod
+    def _get_op(cls, op, device):
+        key = (op, device)
+        if key not in cls._DISPATCH:
+            msg = f'unknown op: {key}'
+            raise KeyError(msg)
+        op = cls._DISPATCH[key]
+        return op
 
     @classmethod
     def _unpack_inputs_maybe(cls, inputs):

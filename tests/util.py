@@ -1,9 +1,4 @@
-import os
-import itertools
-
 import numpy as np
-
-from tensorgrad.const import DTYPE, DEVICE
 
 
 def require_torch():
@@ -27,20 +22,3 @@ def check_tensors(a, b, tol=1e-5, show_diff=False):
                 msg = f'a={ai} b={bi} :: d={abs(ai - bi)}'
                 print(msg)
     return flag
-
-
-def generate_cases(*args):
-    cases = list(itertools.product(*args))
-    return cases
-
-
-def get_device():
-    device = os.getenv('DEVICE', 'cpu')
-    return {
-        'cpu': DEVICE.CPU,
-        'cuda': DEVICE.CUDA,
-    }[device]
-
-
-def get_dtype():
-    return DTYPE.FLOAT32
