@@ -5,10 +5,11 @@ import tensorgrad
 
 
 INTRO = """
+# About
 Benchmarks below compare performance of `tensorgrad` against `PyTorch`.  
 The most interesting part about all this is the last column which shows how many times `tensorgrad` is slower than `PyTorch` given some `nn` module, size of input and device.
 
-Specifically, for each `nn` module I measure time of forward and backward passes over inputs of different sizes using `PyTorch` and using `tensorgrad`. Each table contains results of a particular `nn` module's pass on a particular `tensorgrad` device. It's worth noting that `cuda` times of `tensorgrad` are compared with `cpu` times of `PyTorch` (because of using cpu-only build of `PyTorch`).  
+Specifically, for each `nn` module I measure time of forward and backward passes over inputs of different sizes using `PyTorch` and using `tensorgrad` on different devices. Each table contains results of a particular `nn` module's pass on a particular `tensorgrad` device. It's worth noting that `cuda` times of `tensorgrad` are compared with `cpu` times of `PyTorch` (because of using cpu-only build of `PyTorch`).  
 """.strip()
 MARKDOWN_PATH = os.getenv('MD_PATH', 'BENCHMARK.md')
 NUM_RUNS = int(os.getenv('NUM_RUNS', '10').strip())
