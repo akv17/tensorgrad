@@ -44,32 +44,60 @@ def main(
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '--device',
         default='cpu',
         type=str,
-        help=''
+        help='device to train on',
     )
     parser.add_argument(
         '--epochs',
         default=20,
         type=int,
+        help='number of epochs',
     )
     parser.add_argument(
         '--batch_size',
         default=32,
         type=int,
+        help='batch size',
     )
     parser.add_argument(
         '--truncate_train',
         default=10000,
         type=int,
+        help='number of training samples',
     )
     parser.add_argument(
         '--truncate_test',
         default=1000,
         type=int,
+        help='number of test samples'
+    )
+    parser.add_argument(
+        '--patch_size',
+        default=4,
+        type=int,
+        help='ViT patch size'
+    )
+    parser.add_argument(
+        '--embed',
+        default=128,
+        type=int,
+        help='ViT embedding dimensionality (d_model)'
+    )
+    parser.add_argument(
+        '--num_heads',
+        default=2,
+        type=int,
+        help='ViT number of attention heads per single encoder layer'
+    )
+    parser.add_argument(
+        '--num_layers',
+        default=1,
+        type=int,
+        help='ViT number of encoder layers'
     )
     args = parser.parse_args()
     main(
@@ -78,4 +106,8 @@ if __name__ == '__main__':
         batch_size=args.batch_size,
         truncate_train=args.truncate_train,
         truncate_test=args.truncate_test,
+        patch_size=(args.patch_size, args.patch_size),
+        embedding_dim=args.embed,
+        num_heads=args.num_heads,
+        num_layers=args.num_layers,
     )
