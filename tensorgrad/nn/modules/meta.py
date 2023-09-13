@@ -2,6 +2,16 @@ from .base import Module
 
 
 class Sequential(Module):
+    """
+    Applies a sequence of modules in order one after another.  
+
+    **Parameters**:  
+    - `modules: iterable:` iterable of modules to apply  
+
+    **Input:** `(*)`  
+    **Output:** `(*)`  
+    **Weights:** `None`  
+    """
 
     def __init__(self, *modules):
         super().__init__()

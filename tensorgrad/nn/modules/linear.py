@@ -7,8 +7,20 @@ from ...const import DTYPE
 
 class Linear(Module):
     """
-    weight: [out, in]
-    bias: [out,]
+    Applies linear transformation `x * w.T + b` to an input.  
+    Input may have any number of dimenstions but no less than 2.  
+    Size of the last dimension must be equal to `in_features`.  
+
+    **Parameters:**  
+    - `in_features: int:` size of each input element  
+    - `out_features: int:` size of each output element  
+    - `bias: bool:` will add bias if set to `True`  
+    
+    **Input:** `(*, in_features)`  
+    **Output:** `(*, out_features)`  
+    **Weights:**  
+    - `weight: (out_features, in_features):` learnable weights  
+    - `bias: (out_features,):` learnable bias if `bias` was set to `True`  
     """
     
     def __init__(self, in_features, out_features, bias=True, dtype=None, device=None):
@@ -55,10 +67,22 @@ class Linear(Module):
 
 class Conv2d(Module):
     """
-    maybe check params against each other.
+    Performs 2D convolution over spatial dimensions of a batch of 3D tensors.  
+    Expects tensors in channel-first format.  
 
-    weight: [co, ci, kh, kw]
-    bias: [co,]
+    **Parameters:**  
+    - `in_channels: int:` number of channels in input  
+    - `out_channels: int:` number of channels in output  
+    - `kernel_size: tuple, int:` size of the convolution kernel  
+    - `stride: tuple, int: 1:` stride of the sliding window  
+    - `padding: tuple, int, same: 0:` size of the input padding along both spatial dimensions. `same` will preserve the same size as input  
+    - `bias: bool:` will add bias if set to `True`  
+    
+    **Input:** `(B, C, H_in, W_in)`  
+    **Output:** `(B, C, H_out, W_out)`  
+    **Weights:**  
+    - `weight: (C_out, C_in, H_kernel, W_kernel):` learnable weights of the convolution kernel
+    - `bias: (C_out,):` learnable bias if `bias` was set to `True`  
     """
     
     def __init__(
@@ -142,7 +166,26 @@ class Conv2d(Module):
 
 class MultiheadAttention(Module):
     """
-    if attn_mask 3d assumed shape is (bs, sl, sl) so the same mask is broadcasted over all the heads.
+    Performs multihead attention as described in *Attention Is All You Need*.  
+    Operates only on 3D tensors of shape `(batch_size, seq_len, embed_dim)`.  
+    It's also possible to pass a mask preventing attention to specific positions.  
+
+    **Parameters:**  
+    - `embed_dim: int:` embedding dimensionality (aka d_model)  
+    - `num_heads: int:` number of attention heads  
+    
+    **Input:**  
+    - `q: (B, T_q, E)`: query tensor  
+    - `k: (B, T_k, E)`: key tensor  
+    - `v: (B, T_k, E)`: value tensor  
+    - `attn_mask (optional): bool: (B, T_q, T_k) or (T_q, T_k)`: boolean mask preventing attention to specific positions. position is not attended if value in the mask is `True`.  
+    
+    **Output:** `(B, T_q, E)`  
+    **Weights:**  
+    - `q_weight: (embed_dim, embed_dim):` learnable weights of query projection  
+    - `k_weight: (embed_dim, embed_dim):` learnable weights of key projection  
+    - `v_weight: (embed_dim, embed_dim):` learnable weights of value projection  
+    - `o_weight: (embed_dim, embed_dim):` learnable weights of merged output projection  
     """
 
     def __init__(self, embed_dim, num_heads, dtype=None, device=None):

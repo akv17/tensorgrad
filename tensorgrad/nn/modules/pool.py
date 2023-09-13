@@ -2,10 +2,6 @@ from .base import Module
 
 
 class _GeneralizedPool2d(Module):
-    """
-    maybe check params against each other.
-    """
-
     _OP = None
     
     def __init__(
@@ -46,8 +42,36 @@ class _GeneralizedPool2d(Module):
 
 
 class MaxPool2d(_GeneralizedPool2d):
+    """
+    Performs max pooling over spatial dimensions of a batch of 3D tensors.  
+    Expects tensors in channel-first format.  
+
+    **Parameters:**  
+    - `kernel_size: tuple, int:` kernel size  
+    - `stride: tuple, int: None:` stride of sliding window  
+    - `padding: tuple, int: 0:` size of input padding along both spatial dimensions  
+
+    **Input:** `(B, C, H_in, W_in)`  
+    **Output:** `(B, C, H_out, W_out)`  
+    **Weights:** `None`  
+    """
+
     _OP = 'max'
 
 
 class AvgPool2d(_GeneralizedPool2d):
+    """
+    Performs average pooling over spatial dimensions of a batch of 3D tensors.  
+    Expects tensors in channel-first format.  
+
+    **Parameters:**  
+    - `kernel_size: tuple, int:` kernel size  
+    - `stride: tuple, int: None:` stride of sliding window  
+    - `padding: tuple, int: 0:` size of input padding along both spatial dimensions  
+
+    **Input:** `(B, C, H_in, W_in)`  
+    **Output:** `(B, C, H_out, W_out)`  
+    **Weights:** `None`  
+    """
+
     _OP = 'avg'

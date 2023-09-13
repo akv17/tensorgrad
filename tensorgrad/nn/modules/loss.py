@@ -2,6 +2,20 @@ from .base import Module
 
 
 class CrossEntropyLoss(Module):
+    """
+    Computes cross-entropy loss function between input logits and targets.  
+    Input logits are expected to be unnormalized as softmax will be applied internally.  
+
+    **Parameters**:  
+    - `reduction: str: mean, sum:` type of reduction to final scalar value  
+
+    **Input:**  
+    - `outputs: (B, num_classes):` input logits for each sample  
+    - `targets: (B,):` indices as integers of a target class for each sample  
+
+    **Output:** `scalar`  
+    **Weights:** `None`  
+    """
 
     def __init__(self, reduction='mean'):
         super().__init__()
@@ -32,6 +46,20 @@ class CrossEntropyLoss(Module):
 
 
 class MSELoss(Module):
+    """
+    Computes mean-squared-error loss function between inputs and targets.  
+    Inputs and targets are expected to have the same shape and dtype.  
+
+    **Parameters**:  
+    - `reduction: str: mean, sum:` type of reduction to final scalar value  
+
+    **Input:**  
+    - `outputs: (*)`  
+    - `targets: (*)`  
+
+    **Output:** `scalar`  
+    **Weights:** `None`  
+    """
 
     def __init__(self, reduction='mean'):
         super().__init__()

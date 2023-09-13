@@ -86,12 +86,20 @@ class _BatchNorm(Module, ABC):
 
 class BatchNorm1d(_BatchNorm):
     """
-    check 2d only
-    check batch size > 1
-    accumulate running
+    Applies Batch Normalization to 2D inputs.  
+    Tracks running estimates of mean and variance to use in inference.  
 
-    weight: [num_features,]
-    bias: [num_features,]
+    **Parameters:**  
+    - `num_features: int:` number of features in input  
+    - `eps: float: 1e-5:` small value for numerical stability  
+    - `momentum: float: 0.1:` proportion of new observation when accumulating running estimates  
+    - `track_running_stats: bool: True:` tracks running estimates of mean and variance if set to `True`  
+
+    **Input:** `(B, F)`  
+    **Output:** `(B, F)`  
+    **Weights:**  
+    - `weight: (F,):` learnable gamma  
+    - `bias: (F,):` learnable beta  
     """
     
     def _calculate_dim(self):
@@ -100,12 +108,21 @@ class BatchNorm1d(_BatchNorm):
 
 class BatchNorm2d(_BatchNorm):
     """
-    check 4d only
-    check batch size > 1
-    accumulate running
+    Applies Batch Normalization to a batch of 3D tensors.  
+    Expects tensors in channel-fitst format.  
+    Tracks running estimates of mean and variance to use in inference.  
 
-    weight: [num_features,]
-    bias: [num_features,]
+    **Parameters:**  
+    - `num_features: int:` number of channels in each 3D input  
+    - `eps: float: 1e-5:` small value for numerical stability  
+    - `momentum: float: 0.1:` proportion of new observation when accumulating running estimates  
+    - `track_running_stats: bool: True:` tracks running estimates of mean and variance if set to `True`  
+
+    **Input:** `(B, C, H, W)`  
+    **Output:** `(B, C, H, W)`  
+    **Weights:**  
+    - `weight: (C,):` learnable gamma  
+    - `bias: (C,):` learnable beta  
     """
 
     def forward(self, x):
@@ -120,6 +137,19 @@ class BatchNorm2d(_BatchNorm):
 
 
 class LayerNorm(Module):
+    """
+    Applies Layer Normalization to input.  
+
+    **Parameters:**  
+    - `normalized_shape: int, tuple:` shape to normalize over as a contiguous subset of input shape starting from the end  
+    - `eps: float: 1e-5:` small value for numerical stability  
+
+    **Input:** `(*)`  
+    **Output:** `(*)`  
+    **Weights:**  
+    - `weight: normalized_shape:` learnable gamma  
+    - `bias: normalized_shape:` learnable beta  
+    """
     
     def __init__(self, normalized_shape, eps=1e-05, dtype=None, device=None):
         super().__init__()
