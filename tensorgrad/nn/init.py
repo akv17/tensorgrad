@@ -15,9 +15,10 @@ def ones(tensor):
     tensor.data = data
 
 
-def uniform_fan_in(tensor):
-    fi, _ = _calculate_fan_in_fan_out(tensor.shape)
-    hi = math.sqrt(1 / fi)
+def uniform_fan_in(tensor, fan_in=None):
+    if fan_in is None:
+        fan_in, _ = _calculate_fan_in_fan_out(tensor.shape)
+    hi = math.sqrt(1 / fan_in)
     lo = -hi
     storage = StorageDispatch.get(tensor.device)
     data = storage.random_uniform(lo, hi, shape=tensor.shape, dtype=tensor.dtype)
