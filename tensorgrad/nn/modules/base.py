@@ -56,6 +56,12 @@ class Module(ABC):
             v.to(device, inplace=True)
         for m in self._modules.values():
             m.to(device)
+    
+    def cpu(self):
+        self.to('cpu')
+    
+    def cuda(self):
+        self.to('cuda')
 
     def train(self):
         self.training = True
