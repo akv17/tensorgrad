@@ -17,7 +17,7 @@ class Sequential(Module):
     def __getitem__(self, ix):
         return self._modules[str(ix)]
     
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         for m in self._modules.values():
-            x = m(x)
+            x = m(x, **kwargs)
         return x
