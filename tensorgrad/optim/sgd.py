@@ -3,6 +3,15 @@ from ..ctx import no_grad
 
 
 class SGD(Optimizer):
+    """
+    Implements stochastic gradient descent with momentum.  
+
+    **Parameters:**  
+    - `parameters: Iterable[Parameter]:` parameters to optimize  
+    - `lr: float:` learning rate  
+    - `momentum: float: None:` momentum factor  
+    """
+
     
     def __init__(self, parameters, lr, momentum=None):
         self.parameters = parameters

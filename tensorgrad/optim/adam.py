@@ -3,6 +3,15 @@ from ..ctx import no_grad
 
 
 class Adam(Optimizer):
+    """
+    Implements Adam algorithm with original defaults.  
+
+    **Parameters:**  
+    - `parameters: Iterable[Parameter]:` parameters to optimize  
+    - `lr: float: 1e-3:` learning rate  
+    - `betas: tuple: (0.9, 0.999):` first and second moments' scales  
+    - `eps: float: 1e-8:` small value for numerical stability  
+    """
     
     def __init__(self, parameters, lr=0.001, betas=(0.9, 0.999), eps=1e-8):
         self.parameters = parameters

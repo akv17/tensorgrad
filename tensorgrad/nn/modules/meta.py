@@ -6,7 +6,7 @@ class Sequential(Module):
     Applies a sequence of modules in order one after another.  
 
     **Parameters**:  
-    - `modules: iterable:` iterable of modules to apply  
+    - `modules: Iterable[Module]:` iterable of modules to apply  
 
     **Input:** `(*)`  
     **Output:** `(*)`  
