@@ -33,32 +33,36 @@ def main(
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '--device',
         default='cpu',
         type=str,
-        help=''
+        help='device to train on',
     )
     parser.add_argument(
         '--epochs',
         default=20,
         type=int,
+        help='number of epochs',
     )
     parser.add_argument(
         '--batch_size',
         default=32,
         type=int,
+        help='batch size',
     )
     parser.add_argument(
         '--truncate_train',
         default=10000,
         type=int,
+        help='number of training samples',
     )
     parser.add_argument(
         '--truncate_test',
         default=1000,
         type=int,
+        help='number of test samples'
     )
     args = parser.parse_args()
     main(
