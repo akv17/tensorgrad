@@ -42,6 +42,18 @@ class NumpyStorage:
         return data
     
     @classmethod
+    def random_normal(cls, shape, mu=0.0, sigma=1.0, dtype=None):
+        dtype = cls._map_dtype(dtype)
+        data = cls.np.random.normal(mu, sigma, size=shape).astype(dtype)
+        return data
+    
+    @classmethod
+    def random_randint(cls, low, high, shape, dtype=None):
+        dtype = cls._map_dtype(dtype)
+        data = cls.np.random.randint(low, high, size=shape).astype(dtype)
+        return data
+    
+    @classmethod
     def bernoulli(cls, p, shape, dtype=None):
         dtype = cls._map_dtype(dtype)
         data = cls.np.random.binomial(n=1, p=p, size=shape).astype(dtype)

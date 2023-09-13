@@ -24,9 +24,30 @@ class Tensor:
         return tensor
     
     @classmethod
+    def arange(cls, n, dtype=None, device=None, requires_grad=True):
+        dtype = dtype or DTYPE.INT64
+        storage = StorageDispatch.get(device)
+        data = storage.arange(n, dtype=dtype)
+        tensor = cls(data=data, dtype=dtype, device=device, requires_grad=requires_grad)
+        return tensor
+    
+    @classmethod
     def rand(cls, *shape, dtype=None, device=None, requires_grad=True):
         kwargs = {'a': 0.0, 'b': 1.0}
         tensor = cls._factory('random_uniform', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
+        return tensor
+    
+    @classmethod
+    def randn(cls, *shape, mu=0.0, sigma=1.0, dtype=None, device=None, requires_grad=True):
+        kwargs = {'mu': mu, 'sigma': sigma}
+        tensor = cls._factory('random_normal', shape=shape, dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
+        return tensor
+    
+    @classmethod
+    def randint(cls, low, high, shape, dtype=None, device=None, requires_grad=True):
+        dtype = dtype or DTYPE.INT64
+        kwargs = {'low': low, 'high': high, 'shape': shape}
+        tensor = cls._factory('random_randint', dtype=dtype, device=device, requires_grad=requires_grad, **kwargs)
         return tensor
     
     @classmethod
@@ -289,11 +310,7 @@ class Tensor:
     def long(self, inplace=False):
         ob = self._cast(dtype=DTYPE.INT64, inplace=inplace)
         return ob
-
-    def arange(self, n):
-        data = self._storage.arange(n, dtype=self.dtype)
-        return self._copy_from_data(data)
-
+    
     def numpy(self):
         data = self._storage.numpy(self.data)
         return data
