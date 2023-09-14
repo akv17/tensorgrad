@@ -106,7 +106,7 @@ class TensorGenerator:
                 op_buffer.append(f'**Parameters:**')
             op_data = '\n'.join(op_buffer)
         except:
-            op_data = f'## `{op}`'
+            op_data = f'## `{op}`\n{op_doc}  '
         self.buffer.append(op_data)
 
     def _gather_ops(self):

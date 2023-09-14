@@ -102,7 +102,9 @@ Move tensor to CUDA device
 Detach tensor from autograd tracking  
 **Parameters:**
 ## `device`
+Device the tensor is allocated on  
 ## `dtype`
+Data type of each element  
 ## `empty`
 *classmethod*  
 Construct empty tensor with given spec  
@@ -147,6 +149,7 @@ Reduce tensor by computing mean over dimension or globally. Supports reduce over
 Reduce tensor by computing min over dimension or globally  
 **Parameters:** `dim=None`
 ## `ndim`
+Number of tensor dimensions  
 ## `numel`
 Total number of elements in the tensor  
 **Parameters:**
@@ -185,6 +188,7 @@ Render autograd graph from tensor as a leaf node
 Reshape tensor to a new shape  
 **Parameters:** `*shape`
 ## `shape`
+Shape of the tensor  
 ## `sigmoid`
 Compute sigmoid function element-wise  
 **Parameters:**
