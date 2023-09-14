@@ -1,6 +1,9 @@
+import os
 import inspect
 
 import tensorgrad
+
+PRINT_COUNTS = os.getenv('PRINT_COUNTS') == '1'
 
 
 class DocsGenerator:
@@ -86,6 +89,8 @@ class TensorGenerator:
         ops = self._gather_ops()
         for op in ops:
             self._generate_op(op)
+        if PRINT_COUNTS:
+            print(f'tensor ops: {len(ops)}')
 
     def _generate_op(self, op):
         try:
@@ -149,6 +154,8 @@ class ModulesGenerator:
         mods = self._gather_modules()
         for mod in mods:
             self._generate_module(mod)
+        if PRINT_COUNTS:
+            print(f'modules ({self.base_cls}): {len(mods)}')
         
     def _generate_module(self, mod):
         doc = mod.__doc__ or ''
