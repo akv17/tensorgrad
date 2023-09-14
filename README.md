@@ -232,5 +232,5 @@ TBD
 # Computational Graph
 TBD
 
-# Extentions
+# Extensions
 TBD
