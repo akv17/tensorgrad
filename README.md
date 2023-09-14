@@ -5,7 +5,8 @@ Its designed exactly like `PyTorch`, depends only on `NumPy` and implements over
 
 # Why?
 *Why bothering with yet another neural network framework?*  
-Indeed, there is not need.  
+
+Indeed, there is no need.  
 `tensorgrad` was never meant to be an actual kind of production-ready framework to train and infer models.  
 
 `tensorgrad` is solely an **educational** project with the main purpose of diving deep into machinery of tensor computation and vectorized backpropagation.  
@@ -171,24 +172,24 @@ All modules support both `cpu` and `cuda` devices with `float32` dtype.
 At the highest level `tensorgrad` roughly does this:  
 1. Wraps specific multi-dimensional array implementation with `tensorgrad.tensor`  
 2. Leverages this implementation to define forward and backward computation  
-3. Dynamically dispatches forward and backward calls in runtime  
+3. Dynamically dispatches op calls in runtime  
 4. Captures and maintains the computational graph  
 5. Traverses the graph forwards and backwards  
 
 Under the hood `tensorgrad` is built off the following main concepts:  
 - `Storage:` implementation of multi-dimensional array on a particular device  
-- `Op:` implementation of particular tensor operation's forward and backward for a particular device  
+- `Op:` implementation of forward and backward for a particular storage  
 - `Autograd:` engine which captures all tensor ops and maintains the computational graph  
 - `Dispatch`: dispatcher which executes tensor ops in runtime and supports autograd machinery  
 
-Storage provides implementation of the multi-dimensional array and all of its ops. This implementation is then used by `tensorgrad` ops which implement forward and backward computation. A dispatcher then registers each `tensorgrad` op. In runtime the dispatcher handles op calls and routes them to appropriate `tensorgrad` op implementations. Finally the dispatcher handles all the neccessary autograd stuff.  
+Storage provides implementation of the multi-dimensional array and all of its ntive ops. This implementation is then used by `tensorgrad` ops which implement forward and backward computation. A dispatcher then registers each `tensorgrad` op. In runtime the dispatcher handles op calls and routes them to appropriate `tensorgrad` op implementations. Finally the dispatcher handles all the neccessary autograd stuff.  
 
 `cpu` storage and ops are powered by `NumPy` while `CuPy` powers `cuda` ones. Its worth noting that `cpu` and `cuda` ops share the same implementation thanks to interoperability between `NumPy` and `CuPy`.
 
 # Efficiency
-Under the hood `tensorgrad` uses vectorized `NumPy` code to implement `cpu` device and `CuPy` code to implement `cuda` device. In theory this makes `tensorgrad` fairly fast on both devices. However on average `tensorgrad` is roughly 10 times slower than `PyTorch` on `cpu`. Detailed benchmarks are listed in `BENCHMARK.md`. On the other side `tensorgrad` is significantly faster than naive loop-based implementations (even `numba-jit` compiled ones).  
+Under the hood `tensorgrad` uses vectorized `NumPy` code to implement `cpu` device and `CuPy` code to implement `cuda` device. In theory this makes `tensorgrad` fairly fast on both devices. However on average `tensorgrad` on `cpu` is roughly 10x slower than `PyTorch` on `cpu`. Detailed benchmarks are listed in `BENCHMARK.md`. On the other side `tensorgrad` is significantly faster than naive loop-based implementations (even `numba-jit` compiled ones).  
 
-I guess there are at least two reasons behind such a slowdown compared to `PyTorch`. Firstly, of course its a skill issue. In theory one may implement an op with `NumPy` faster than `tensorgrad` does. Secondly, its the limits of the `NumPy` nature. You cant just go out there and throw in a nice kernel running your for loops natively compiled optimized and parallelized. You kinda have to get away with general purpose stuff `NumPy` offers and try to tailor it to your needs. Of course for some cases its works great. That would typically be the case with generic ops like binary ops, matmul, reshapes and etc. On the contrary, when dealing with other more complicated ops such as `conv2d` or `max_pool2d` you really start to feel those limits which force you to dig deep into any possible tricks and workarounds.  
+I guess there are at least two reasons behind such a slowdown compared to `PyTorch`. Firstly, of course its a skill issue. In theory one may implement an op with `NumPy` faster than `tensorgrad` does. Secondly, its the limits of the `NumPy` nature. You cant just go out there and throw in a nice kernel running your for loops natively compiled optimized and parallelized. You kinda have to get away with general purpose stuff `NumPy` offers and try to tailor it to your needs. Of course for some cases its works great. That would typically be the case with generic ops like binary ops, matmul, reshapes and etc. On the contrary, when dealing with other more complicated ops such as `conv2d` or `max_pool2d` you really start to feel those limits which force you to dig deep into any possible tricks and workarounds which introduce overhead.  
 
 Finally, one may notice terribly slow backward of softmax in `tensorgrad`. The reason is that in backward I have to compute full jacobian of the softmax because I could not come up with a more efficient vectorized implementation in the general purpose case. Yes a trivial gradient exists for softmax followed by cross-entropy loss but I'm not talking such a case. I'm talking about general purpose softmax such as in multihead attention for example.
 
@@ -197,7 +198,7 @@ Finally, one may notice terribly slow backward of softmax in `tensorgrad`. The r
 
 Efficiency of `cuda` ops correlates with their generic-ness. Generic ops run really fast approaching `CuPy` peak performance. These include binary ops and matmul. Specific ops such as `max_pool2d` or `softmax` suffer from significant overhead because of a load of tricks and workarounds in their implementation.  
 
-Finally, `tensorgrad` achieves overall pretty low `cuda` device usage. Average usage is around 10% while training models. Yet I must say that training is single threaded and `tensorgrad` has zero optimizations related to `cuda` workflow which introduces unneccessary copies and transfers. In fact in `tensorgrad` `cpu` and `cuda` ops are the same entity because they share the same implementation. Its the array interface implementation that effectively runs the code on the device. `tensorgrad` always does some constant work to get down there so there will always be constant overhead no matter which device is used. Anyways its obvoius that there remains plenty of work to do to improve overall device usage.  
+Finally, `tensorgrad` achieves overall pretty low `cuda` device usage. Average usage is around 10% while training models. Yet I must say that training is single threaded and `tensorgrad` has zero optimizations related to `cuda` workflow which introduces unneccessary copies and transfers. In fact `cpu` and `cuda` ops in `tensorgrad` are the same entity because they share the same implementation. Its the array interface implementation that effectively runs the code on the device. `tensorgrad` always does some constant work to get down there so there will always be constant overhead no matter which device is used. Anyways its obvoius that there remains plenty of work to do to improve overall device usage.  
 
 # Tests
 `tensorgrad` is thoroughly tested against `PyTorch` as the ground truth. Each op is tested with various setups for correctness of forward and backward computation. Built-in `unittest` is used as testing framework.
@@ -226,3 +227,10 @@ Also `parameterized` package is required.
 Full documentation and API refernce is available in `DOCS.md`
 
 # Installation
+TBD
+
+# Computational Graph
+TBD
+
+# Extentions
+TBD
