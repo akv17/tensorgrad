@@ -101,6 +101,7 @@ class Tensor:
         dtype=None,
         device=None,
         requires_grad=True,
+        name=None,
     ):
         """Construct tensor explicitly from data with given spec"""
         
