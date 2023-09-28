@@ -24,7 +24,6 @@ class OP(str, Enum):
     POW = 'pow'
     EXP = 'exp'
     LOG = 'log'
-    # SQRT = 'sqrt'
     MASKED_FILL = 'masked_fill_'
     
     SUM_REDUCE = 'sum_reduce'
