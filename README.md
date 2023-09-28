@@ -7,9 +7,9 @@ Its designed exactly like PyTorch, depends only on NumPy and implements over 60 
 *Why bothering with yet another neural network framework?*  
 
 Indeed, there is no need.  
-tensorgrad was never meant to be an actual kind of production-ready framework to train and infer models.  
+tensorgrad was never meant to be an actual kind of production-ready framework to train and run models.  
 
-tensorgrad is solely an **educational** project with the main purpose of diving deep into machinery of tensor computation and vectorized backpropagation.  
+tensorgrad is purely an **educational** project with the main purpose of diving deep into machinery of tensor computation and vectorized backpropagation.  
 Also it was quite fun to explore and reproduce PyTorch design.  
 
 
@@ -96,7 +96,7 @@ softmax:
 - Implements 63 differentiable tensor operations and 18 neural network modules
 - Follows PyTorch API being its drop-in replacement
 - Runs on both cpu and cuda devices
-- Fully vectorized computation without any native Python loops  
+- Fully vectorized computation without any native python loops  
 - Computational graph rendering
 - Exhaustive tests against PyTorch  
 
