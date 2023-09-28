@@ -1,7 +1,8 @@
+from .stubs import Storage
 from ..const import DTYPE
 
 
-class NumpyStorage:
+class NumpyStorage(Storage):
     np = None
     DEVICE = None
 

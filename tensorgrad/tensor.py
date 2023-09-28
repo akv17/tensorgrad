@@ -104,7 +104,7 @@ class Tensor:
         name=None,
     ):
         """Construct tensor explicitly from data with given spec"""
-        
+        self.name = name
         self.requires_grad = requires_grad if is_grad_enabled() else False
         
         self._storage = StorageDispatch.get(device)
@@ -406,9 +406,10 @@ class Tensor:
     def render(self):
         """Render autograd graph from tensor as a leaf node"""
         from .util.render import render_graph
-        render_graph(self)
+        image = render_graph(self)
+        return image
     
-    def backward(self, upstream=None):
+    def backward(self, upstream=None, destroy_graph=True):
         """Run autograd backward pass starting from tensor as a leaf node"""
         if upstream is not None:
             upstream = self._storage.tensor(upstream, dtype=self.dtype)
@@ -418,11 +419,12 @@ class Tensor:
         nodes = self._traverse()
         for node in reversed(nodes):
             node._backward()
-        for node in nodes:
-            del node._op
-            del node._children
-            node._op = None
-            node._children = ()
+        if destroy_graph:
+            for node in nodes:
+                del node._op
+                del node._children
+                node._op = None
+                node._children = ()
 
     def _cast(self, dtype, inplace):
         if inplace:

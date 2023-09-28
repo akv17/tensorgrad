@@ -1,4 +1,5 @@
 import tempfile
+from uuid import uuid4
 
 
 def render_graph(node):
@@ -13,14 +14,16 @@ def render_graph(node):
         node = nodes.pop(0)
         if id(node) in visited:
             continue
+        node_name = node.name or f'tensor@{str(uuid4())[:8]}'
         visited.add(id(node))
         op = node._op
         op_key = f'_op_{id(node)}'
-        dot.node(str(id(node)), f'{str(node.name)}\n\nshape={list(node.shape)}\n\ndata={node.data}\n\ngrad={node.grad}', shape='box')
+        node_data = _normalize_data_repr(node.data)
+        node_grad = _normalize_data_repr(node.grad)
+        dot.node(str(id(node)), f'{node_name}\n\nshape={list(node.shape)}\n\ndata={node_data}\n\ngrad={node_grad}', shape='box')
         if op is not None:
             dot.node(op_key, str(op.NAME.value))
         for ch in node._children:
-            # dot.node(str(id(ch)), f'{ch.name}\nshape={list(ch.shape)}\ndata={node.data.data}\n\ngrad={node.grad.data}', shape='box')
             nodes.append(ch)
             if op is not None:
                 dot.edge(str(id(ch)), op_key)
@@ -31,4 +34,11 @@ def render_graph(node):
         dot.render(filename='g', directory=tmp)
         fp = f'{tmp}/g.png'
         im = Image.open(fp)
-    im.show()
+    return im
+
+def _normalize_data_repr(data, max_size=120):
+    data = str(data)
+    if len(data) > max_size:
+        size = max_size // 2
+        data = data[:size] + ' ... ' + data[-size:]
+    return data
